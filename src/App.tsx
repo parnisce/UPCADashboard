@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from './layouts/AppLayout';
 import { Dashboard } from './pages/Dashboard';
 import { OrdersPage } from './pages/OrdersPage';
@@ -19,23 +19,21 @@ const Placeholder = ({ title }: { title: string }) => (
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={<LoginPage />} />
 
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/orders/:id" element={<Placeholder title="Order Detail" />} />
-          <Route path="/properties" element={<PropertiesPage />} />
-          <Route path="/bookings" element={<Placeholder title="Bookings & Calendar" />} />
-          <Route path="/deliverables" element={<Placeholder title="Deliverables" />} />
-          <Route path="/billing" element={<Placeholder title="Billing & Invoices" />} />
-          <Route path="/support" element={<Placeholder title="Support & Messages" />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+      <Route element={<AppLayout />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/orders/:id" element={<Placeholder title="Order Detail" />} />
+        <Route path="/properties" element={<PropertiesPage />} />
+        <Route path="/bookings" element={<Placeholder title="Bookings & Calendar" />} />
+        <Route path="/deliverables" element={<Placeholder title="Deliverables" />} />
+        <Route path="/billing" element={<Placeholder title="Billing & Invoices" />} />
+        <Route path="/support" element={<Placeholder title="Support & Messages" />} />
+      </Route>
+    </Routes>
   );
 }
 
