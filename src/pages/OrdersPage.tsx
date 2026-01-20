@@ -1,21 +1,30 @@
 import { useEffect, useState } from 'react';
-import { Search, Filter } from 'lucide-react';
-import type { Order } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { Search, Filter, X } from 'lucide-react';
+import type { Order, OrderStatus } from '../types';
 import { api } from '../services/api';
 import { OrderRow } from '../components/OrderRow';
+import { cn } from '../services/utils';
 
 export const OrdersPage: React.FC = () => {
+    const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<OrderStatus | 'All'>('All');
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     useEffect(() => {
         api.getOrders().then(setOrders);
     }, []);
 
-    const filteredOrders = orders.filter(o =>
-        o.propertyAddress.toLowerCase().includes(search.toLowerCase()) ||
-        o.id.toLowerCase().includes(search.toLowerCase())
-    );
+    const statuses: (OrderStatus | 'All')[] = ['All', 'Scheduled', 'In Progress', 'Editing', 'Delivered', 'Archived'];
+
+    const filteredOrders = orders.filter(o => {
+        const matchesSearch = o.propertyAddress.toLowerCase().includes(search.toLowerCase()) ||
+            o.id.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = statusFilter === 'All' || o.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     return (
         <div className="space-y-6">
@@ -25,15 +34,57 @@ export const OrdersPage: React.FC = () => {
                     <p className="text-gray-500">Manage and track all your property marketing projects.</p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className={cn(
+                            "inline-flex items-center gap-2 px-4 py-2 border rounded-xl font-semibold transition-colors",
+                            isFilterOpen || statusFilter !== 'All'
+                                ? "bg-upca-blue text-white border-upca-blue"
+                                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                        )}
+                    >
                         <Filter className="w-4 h-4" />
-                        Filters
+                        {statusFilter === 'All' ? 'Filters' : statusFilter}
                     </button>
-                    <button className="inline-flex items-center gap-2 px-6 py-2 bg-upca-blue text-white rounded-xl font-bold shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 transition-all">
+                    <button
+                        onClick={() => navigate('/orders/new')}
+                        className="inline-flex items-center gap-2 px-6 py-2 bg-upca-blue text-white rounded-xl font-bold shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 transition-all"
+                    >
                         New Order
                     </button>
                 </div>
             </div>
+
+            {/* Filter Panel */}
+            {isFilterOpen && (
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-wrap gap-2 animate-in slide-in-from-top-2 duration-300">
+                    {statuses.map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => {
+                                setStatusFilter(status);
+                                if (status !== 'All') setIsFilterOpen(false);
+                            }}
+                            className={cn(
+                                "px-4 py-1.5 rounded-full text-sm font-bold transition-all",
+                                statusFilter === status
+                                    ? "bg-upca-blue text-white"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            )}
+                        >
+                            {status}
+                        </button>
+                    ))}
+                    {statusFilter !== 'All' && (
+                        <button
+                            onClick={() => setStatusFilter('All')}
+                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Search Bar */}
             <div className="relative">

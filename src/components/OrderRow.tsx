@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Calendar } from 'lucide-react';
 import type { Order } from '../types';
 import { cn } from '../services/utils';
@@ -8,8 +9,13 @@ interface OrderRowProps {
 }
 
 export const OrderRow: React.FC<OrderRowProps> = ({ order }) => {
+    const navigate = useNavigate();
+
     return (
-        <tr className="hover:bg-gray-50/50 transition-colors group">
+        <tr
+            className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+            onClick={() => navigate(`/orders/${order.id}`)}
+        >
             <td className="px-6 py-6">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-upca-blue/5 flex items-center justify-center text-upca-blue">
@@ -46,7 +52,10 @@ export const OrderRow: React.FC<OrderRowProps> = ({ order }) => {
                 </span>
             </td>
             <td className="px-6 py-6 text-right">
-                <button className="p-2 hover:bg-upca-blue/5 rounded-full text-upca-blue transition-all">
+                <button
+                    onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}`); }}
+                    className="p-2 hover:bg-upca-blue/5 rounded-full text-upca-blue transition-all"
+                >
                     <ArrowRight className="w-5 h-5" />
                 </button>
             </td>

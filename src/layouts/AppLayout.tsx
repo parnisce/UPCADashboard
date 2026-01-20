@@ -25,16 +25,22 @@ const sidebarItems = [
     { name: 'Support', path: '/support', icon: MessageSquare },
 ];
 
+import { useUser } from '../contexts/UserContext';
+
 export const AppLayout: React.FC = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const navigate = useNavigate();
+    const { user, isLoading } = useUser();
 
     const handleLogout = () => {
         navigate('/login');
     };
 
+    if (isLoading) return null;
+
     return (
         <div className="min-h-screen bg-gray-50 flex">
+            {/* ... rest of components ... */}
             {/* Mobile Backdrop */}
             {isSidebarOpen && (
                 <div
@@ -104,13 +110,20 @@ export const AppLayout: React.FC = () => {
                         />
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div
+                        className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-1.5 rounded-2xl transition-colors"
+                        onClick={() => navigate('/account')}
+                    >
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-semibold text-gray-900">John Agent</p>
-                            <p className="text-xs text-gray-500">Elite Realty</p>
+                            <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
+                            <p className="text-xs text-gray-500">{user?.brokerage}</p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-upca-blue/10 flex items-center justify-center text-upca-blue border border-upca-blue/20">
-                            <User className="w-6 h-6" />
+                        <div className="w-10 h-10 rounded-full bg-upca-blue/10 flex items-center justify-center text-upca-blue border border-upca-blue/20 overflow-hidden">
+                            {user?.avatar ? (
+                                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-6 h-6" />
+                            )}
                         </div>
                     </div>
                 </header>

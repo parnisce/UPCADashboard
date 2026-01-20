@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Clock, Calendar as CalendarIcon, CheckCircle, ArrowRight, Map } from 'lucide-react';
 import type { Order, Property } from '../types';
 import { api } from '../services/api';
@@ -6,6 +7,7 @@ import { cn } from '../services/utils';
 import { StatCard } from '../components/StatCard';
 
 export const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [properties, setProperties] = useState<Property[]>([]);
 
@@ -37,7 +39,10 @@ export const Dashboard: React.FC = () => {
                     <h1 className="text-3xl font-bold text-gray-900">Welcome back, John!</h1>
                     <p className="text-gray-500 mt-1">Here's what's happening with your property listings today.</p>
                 </div>
-                <button className="inline-flex items-center justify-center gap-2 bg-upca-blue text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 hover:-translate-y-0.5 transition-all">
+                <button
+                    onClick={() => navigate('/orders/new')}
+                    className="inline-flex items-center justify-center gap-2 bg-upca-blue text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 hover:-translate-y-0.5 transition-all"
+                >
                     <Plus className="w-5 h-5" />
                     Create New Order
                 </button>
@@ -55,12 +60,21 @@ export const Dashboard: React.FC = () => {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold text-gray-900">Active Projects</h2>
-                        <button className="text-upca-blue font-semibold text-sm hover:underline">View all</button>
+                        <button
+                            onClick={() => navigate('/orders')}
+                            className="text-upca-blue font-semibold text-sm hover:underline"
+                        >
+                            View all
+                        </button>
                     </div>
                     <div className="space-y-4">
                         {activeOrders.length > 0 ? (
                             activeOrders.map((order) => (
-                                <div key={order.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:border-upca-blue/30 transition-colors group">
+                                <div
+                                    key={order.id}
+                                    className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:border-upca-blue/30 transition-colors group cursor-pointer"
+                                    onClick={() => navigate(`/orders/${order.id}`)}
+                                >
                                     <div className="flex items-start justify-between">
                                         <div className="flex gap-4">
                                             <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
@@ -116,11 +130,17 @@ export const Dashboard: React.FC = () => {
                             <div key={order.id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
                                 <p className="text-sm font-bold text-gray-900 truncate">{order.propertyAddress}</p>
                                 <div className="flex items-center gap-3 mt-3">
-                                    <button className="flex-1 bg-upca-blue/5 text-upca-blue text-xs font-bold py-2 rounded-lg hover:bg-upca-blue/10 transition-colors">
-                                        View Media
+                                    <button
+                                        onClick={() => navigate(`/orders/${order.id}`)}
+                                        className="flex-1 bg-upca-blue/5 text-upca-blue text-xs font-bold py-2 rounded-lg hover:bg-upca-blue/10 transition-colors"
+                                    >
+                                        Order Detail
                                     </button>
-                                    <button className="flex-1 border border-gray-200 text-gray-600 text-xs font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                        Download
+                                    <button
+                                        onClick={() => navigate('/deliverables')}
+                                        className="flex-1 border border-gray-200 text-gray-600 text-xs font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors text-center"
+                                    >
+                                        Media
                                     </button>
                                 </div>
                             </div>
@@ -130,7 +150,10 @@ export const Dashboard: React.FC = () => {
                     <div className="bg-gradient-to-br from-upca-blue to-upca-teal p-6 rounded-2xl text-white shadow-xl shadow-upca-blue/20">
                         <h3 className="font-bold text-lg">Need a new shoot?</h3>
                         <p className="text-white/80 text-sm mt-1">Book your next property marketing session in under 2 minutes.</p>
-                        <button className="mt-4 w-full bg-white text-upca-blue font-bold py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                        <button
+                            onClick={() => navigate('/orders/new')}
+                            className="mt-4 w-full bg-white text-upca-blue font-bold py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+                        >
                             Book Now
                         </button>
                     </div>

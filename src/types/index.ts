@@ -12,7 +12,7 @@ export interface User {
 export type ServiceType =
     | 'Real Estate Photography'
     | 'Property Video Tours'
-    | '360/Virtual Tours'
+    | '360 / Virtual Tours'
     | 'Drone Photos & Films'
     | 'Property Microsites & Agent Websites'
     | 'Full-Service Real Estate Marketing';
