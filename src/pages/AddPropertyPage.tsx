@@ -34,9 +34,9 @@ export const AddPropertyPage: React.FC = () => {
             });
             alert('Property added successfully!');
             navigate('/properties');
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('Failed to save property.');
+            alert(error.message || 'Failed to save property.');
         } finally {
             setIsSubmitting(false);
         }
@@ -51,7 +51,36 @@ export const AddPropertyPage: React.FC = () => {
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setThumbnail(reader.result as string);
+                const img = new Image();
+                img.onload = () => {
+                    // Resize to max 800px width/height while maintaining aspect ratio
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max = 800;
+
+                    if (width > height) {
+                        if (width > max) {
+                            height *= max / width;
+                            width = max;
+                        }
+                    } else {
+                        if (height > max) {
+                            width *= max / height;
+                            height = max;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+
+                    // Compress to JPEG with 0.7 quality
+                    const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    setThumbnail(resizedDataUrl);
+                };
+                img.src = reader.result as string;
             };
             reader.readAsDataURL(file);
         }

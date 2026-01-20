@@ -85,14 +85,25 @@ const getStoredData = <T>(key: string, initialData: T[]): T[] => {
 
 // Helper to save to localStorage
 const setStoredData = <T>(key: string, data: T[]): void => {
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+        if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+            throw new Error('Storage limit reached. Please remove old properties or upload smaller images.');
+        }
+        throw e;
+    }
 };
 
 // Helper to get from localStorage (single item)
 const getStoredItem = <T>(key: string, initialData: T): T => {
     const stored = localStorage.getItem(key);
     if (!stored) {
-        localStorage.setItem(key, JSON.stringify(initialData));
+        try {
+            localStorage.setItem(key, JSON.stringify(initialData));
+        } catch (e) {
+            console.error('Failed to set initial data', e);
+        }
         return initialData;
     }
     return JSON.parse(stored);

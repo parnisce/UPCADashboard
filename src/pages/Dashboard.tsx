@@ -5,9 +5,11 @@ import type { Order, Property } from '../types';
 import { api } from '../services/api';
 import { cn } from '../services/utils';
 import { StatCard } from '../components/StatCard';
+import { useUser } from '../contexts/UserContext';
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
+    const { user, isLoading: userLoading } = useUser();
     const [orders, setOrders] = useState<Order[]>([]);
     const [properties, setProperties] = useState<Property[]>([]);
 
@@ -32,11 +34,17 @@ export const Dashboard: React.FC = () => {
 
     const activeOrders = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Archived');
 
+    if (userLoading) {
+        return <div className="min-h-screen flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-upca-blue border-t-transparent rounded-full animate-spin"></div>
+        </div>;
+    }
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Welcome back, John!</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name.split(' ')[0] || 'Agent'}!</h1>
                     <p className="text-gray-500 mt-1">Here's what's happening with your property listings today.</p>
                 </div>
                 <button
@@ -58,103 +66,106 @@ export const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Active Orders Section */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-gray-900">Active Projects</h2>
-                        <button
-                            onClick={() => navigate('/orders')}
-                            className="text-upca-blue font-semibold text-sm hover:underline"
-                        >
-                            View all
-                        </button>
-                    </div>
-                    <div className="space-y-4">
-                        {activeOrders.length > 0 ? (
-                            activeOrders.map((order) => (
-                                <div
-                                    key={order.id}
-                                    className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:border-upca-blue/30 transition-colors group cursor-pointer"
-                                    onClick={() => navigate(`/orders/${order.id}`)}
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex gap-4">
-                                            <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                                                <img
-                                                    src={properties.find(p => p.id === order.propertyId)?.thumbnail}
-                                                    alt=""
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                />
+                    <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden group">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">Active Orders</h2>
+                                <p className="text-sm text-gray-500 mt-1">Status of your current photography projects.</p>
+                            </div>
+                            <button
+                                onClick={() => navigate('/orders')}
+                                className="p-2 hover:bg-gray-50 rounded-full transition-colors group-hover:translate-x-1 duration-300"
+                            >
+                                <ArrowRight className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4 relative z-10">
+                            {activeOrders.length > 0 ? (
+                                activeOrders.slice(0, 3).map((order) => (
+                                    <div
+                                        key={order.id}
+                                        className="flex items-center justify-between p-5 bg-gray-50/50 rounded-2xl border border-transparent hover:border-upca-blue/10 hover:bg-white hover:shadow-md transition-all duration-300 group/item"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-upca-blue font-bold">
+                                                {order.propertyAddress.charAt(0)}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-gray-900 group-hover:text-upca-blue transition-colors">{order.propertyAddress}</h3>
-                                                <div className="flex flex-wrap gap-2 mt-2">
-                                                    {order.services.map((s, i) => (
-                                                        <span key={i} className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                            {s === 'Real Estate Photography' ? 'Photo' : s === 'Property Video Tours' ? 'Video' : 'Drone'}
-                                                        </span>
-                                                    ))}
+                                                <p className="font-bold text-gray-900 group-hover/item:text-upca-blue transition-colors">{order.propertyAddress}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-gray-100 font-bold text-gray-400 uppercase tracking-tight">{order.id}</span>
+                                                    <span className="text-xs text-gray-400">•</span>
+                                                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                                                        <CalendarIcon className="w-3 h-3" />
+                                                        {new Date(order.shootDate).toLocaleDateString()}
+                                                    </div>
                                                 </div>
-                                                <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
-                                                    <CalendarIcon className="w-3 h-3" />
-                                                    Shoot date: {order.shootDate}
-                                                </p>
                                             </div>
                                         </div>
-                                        <div className="text-right flex flex-col items-end gap-2">
+                                        <div className="flex items-center gap-4">
                                             <span className={cn(
-                                                "px-3 py-1 rounded-full text-xs font-bold",
-                                                order.status === 'Delivered' ? "bg-emerald-100 text-emerald-700" :
-                                                    order.status === 'Scheduled' ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"
+                                                "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider",
+                                                order.status === 'Scheduled' ? "bg-blue-100 text-blue-700" :
+                                                    order.status === 'In Progress' ? "bg-amber-100 text-amber-700" : "bg-teal-100 text-teal-700"
                                             )}>
                                                 {order.status}
                                             </span>
-                                            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+                                            <button
+                                                onClick={() => navigate(`/orders/${order.id}`)}
+                                                className="p-2 text-gray-300 hover:text-upca-blue transition-colors"
+                                            >
                                                 <ArrowRight className="w-5 h-5" />
                                             </button>
                                         </div>
                                     </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-12 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
+                                    <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500 font-medium">No active orders yet.</p>
+                                    <button
+                                        onClick={() => navigate('/orders/new')}
+                                        className="text-upca-blue font-bold text-sm mt-2 hover:underline"
+                                    >
+                                        Create your first order
+                                    </button>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-200 text-center">
-                                <p className="text-gray-500">No active projects at the moment.</p>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Deliverables / Sidebar Section */}
+                {/* Right Column: Calendar Preview */}
                 <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-gray-900">Recently Delivered</h2>
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-                        {orders.filter(o => o.status === 'Delivered').map((order) => (
-                            <div key={order.id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                                <p className="text-sm font-bold text-gray-900 truncate">{order.propertyAddress}</p>
-                                <div className="flex items-center gap-3 mt-3">
-                                    <button
-                                        onClick={() => navigate(`/orders/${order.id}`)}
-                                        className="flex-1 bg-upca-blue/5 text-upca-blue text-xs font-bold py-2 rounded-lg hover:bg-upca-blue/10 transition-colors"
-                                    >
-                                        Order Detail
-                                    </button>
-                                    <button
-                                        onClick={() => navigate('/deliverables')}
-                                        className="flex-1 border border-gray-200 text-gray-600 text-xs font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors text-center"
-                                    >
-                                        Media
-                                    </button>
+                    <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="font-bold text-gray-900">Upcoming Shoots</h2>
+                            <CalendarIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="space-y-4">
+                            {orders.filter(o => o.status === 'Scheduled').slice(0, 4).map(order => (
+                                <div key={order.id} className="flex gap-4 p-3 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer group">
+                                    <div className="flex-shrink-0 w-12 h-14 bg-gray-50 rounded-xl flex flex-col items-center justify-center border border-gray-100 group-hover:bg-upca-blue group-hover:border-upca-blue transition-all">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-white/70">
+                                            {new Date(order.shootDate).toLocaleString('default', { month: 'short' })}
+                                        </span>
+                                        <span className="text-lg font-black text-gray-900 group-hover:text-white">
+                                            {new Date(order.shootDate).getDate()}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-gray-900 text-sm truncate">{order.propertyAddress}</p>
+                                        <p className="text-xs text-gray-500 mt-1">10:00 AM • Photography</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="bg-gradient-to-br from-upca-blue to-upca-teal p-6 rounded-2xl text-white shadow-xl shadow-upca-blue/20">
-                        <h3 className="font-bold text-lg">Need a new shoot?</h3>
-                        <p className="text-white/80 text-sm mt-1">Book your next property marketing session in under 2 minutes.</p>
+                            ))}
+                        </div>
                         <button
-                            onClick={() => navigate('/orders/new')}
-                            className="mt-4 w-full bg-white text-upca-blue font-bold py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+                            onClick={() => navigate('/bookings')}
+                            className="w-full mt-6 py-3 bg-gray-50 text-gray-600 rounded-xl font-bold text-sm hover:bg-upca-blue hover:text-white transition-all"
                         >
-                            Book Now
+                            View Full Schedule
                         </button>
                     </div>
                 </div>
