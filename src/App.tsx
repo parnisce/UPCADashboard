@@ -47,7 +47,7 @@ function App() {
     <UserProvider>
       <NotificationProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<LoginPage />} />
 
           {/* Client Routes */}
