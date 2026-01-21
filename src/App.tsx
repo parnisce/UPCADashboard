@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import { AppLayout } from './layouts/AppLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { Dashboard } from './pages/Dashboard';
@@ -31,6 +32,14 @@ import { UserProvider } from './contexts/UserContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 
 function App() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get("redirect");
+    if (redirect) {
+      window.history.replaceState({}, "", redirect);
+    }
+  }, []);
+
   return (
     <UserProvider>
       <NotificationProvider>
