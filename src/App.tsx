@@ -37,8 +37,9 @@ function App() {
     const redirect = params.get("redirect");
 
     if (redirect) {
+      const base = "/UPCADashboard";
       const clean = redirect.startsWith("/") ? redirect : "/" + redirect;
-      window.history.replaceState({}, "", clean);
+      window.history.replaceState({}, "", base + clean);
     }
   }, []);
 
