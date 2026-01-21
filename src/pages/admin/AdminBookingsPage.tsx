@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, MapPin, User, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, MapPin, User } from "lucide-react";
 import type { Order } from '../../types';
 import { api } from '../../services/api';
 import { cn } from '../../services/utils';
@@ -8,7 +8,8 @@ import { useOrderStatusStore } from '../../stores/servicesStore';
 
 export const AdminBookingsPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedDate] = useState(new Date());
+    console.log(selectedDate);
     const [viewMode, setViewMode] = useState<'calendar' | 'list'>('list');
     const [filterStatus, setFilterStatus] = useState<'all' | 'scheduled' | 'in-progress'>('all');
     const { getOrderStatus } = useOrderStatusStore();
