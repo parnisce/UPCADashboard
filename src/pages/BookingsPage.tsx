@@ -12,18 +12,27 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Order } from '../types';
 import { cn } from '../services/utils';
+import { useOrderStatusStore } from '../stores/servicesStore';
 
 export const BookingsPage: React.FC = () => {
     const navigate = useNavigate();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [orders, setOrders] = useState<Order[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const { getOrderStatus } = useOrderStatusStore();
 
     useEffect(() => {
         api.getOrders().then(data => {
-            setOrders(data.filter(o => o.status === 'Scheduled' || o.status === 'In Progress'));
+            const updatedData = data.map(order => {
+                const storedStatus = getOrderStatus(order.id);
+                return storedStatus ? { ...order, status: storedStatus } : order;
+            });
+            // Filter only relevant active statuses for the calendar
+            setOrders(updatedData.filter(o =>
+                ['Scheduled', 'In Progress', 'Editing', 'Delivered'].includes(o.status)
+            ));
         });
-    }, []);
+    }, [getOrderStatus]);
 
     // Calendar logic
     const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();

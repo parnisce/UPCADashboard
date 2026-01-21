@@ -6,6 +6,8 @@ import { api } from '../services/api';
 import { OrderRow } from '../components/OrderRow';
 import { cn } from '../services/utils';
 
+import { useOrderStatusStore } from '../stores/servicesStore';
+
 export const OrdersPage: React.FC = () => {
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
@@ -13,9 +15,17 @@ export const OrdersPage: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<OrderStatus | 'All'>('All');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+    const { getOrderStatus } = useOrderStatusStore();
+
     useEffect(() => {
-        api.getOrders().then(setOrders);
-    }, []);
+        api.getOrders().then(data => {
+            const updatedData = data.map(order => {
+                const storedStatus = getOrderStatus(order.id);
+                return storedStatus ? { ...order, status: storedStatus } : order;
+            });
+            setOrders(updatedData);
+        });
+    }, [getOrderStatus]);
 
     const statuses: (OrderStatus | 'All')[] = ['All', 'Scheduled', 'In Progress', 'Editing', 'Delivered', 'Archived'];
 

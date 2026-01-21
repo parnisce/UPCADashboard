@@ -20,6 +20,7 @@ import {
 import { api } from '../services/api';
 import type { Order, Property, Deliverable } from '../types';
 import { cn } from '../services/utils';
+import { useOrderStatusStore } from '../stores/servicesStore';
 
 export const OrderDetailPage: React.FC = () => {
     const { id } = useParams();
@@ -28,12 +29,19 @@ export const OrderDetailPage: React.FC = () => {
     const [property, setProperty] = useState<Property | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const { getOrderStatus } = useOrderStatusStore();
+
     useEffect(() => {
         const fetchOrderDetails = async () => {
             if (!id) return;
             try {
                 const orderData = await api.getOrderById(id);
                 if (orderData) {
+                    // Check if there's an updated status from admin panel
+                    const updatedStatus = getOrderStatus(id);
+                    if (updatedStatus) {
+                        orderData.status = updatedStatus;
+                    }
                     setOrder(orderData);
                     const propData = await api.getPropertyById(orderData.propertyId);
                     if (propData) setProperty(propData);
@@ -46,7 +54,7 @@ export const OrderDetailPage: React.FC = () => {
         };
 
         fetchOrderDetails();
-    }, [id]);
+    }, [id, getOrderStatus]);
 
     if (isLoading) {
         return (
@@ -78,7 +86,13 @@ export const OrderDetailPage: React.FC = () => {
         { status: 'Delivered', label: 'Media Ready', icon: CheckCircle2 },
     ];
 
-    const currentStepIndex = statusSteps.findIndex(s => s.status === order.status);
+    const getStepIndex = (status: string) => {
+        if (status === 'Archived') return 3; // Treat as fully completed
+        if (status === 'Draft') return -1; // Before first step
+        return statusSteps.findIndex(s => s.status === status);
+    };
+
+    const currentStepIndex = getStepIndex(order.status);
 
     const getAssetIcon = (type: Deliverable['type']) => {
         switch (type) {
@@ -137,8 +151,10 @@ export const OrderDetailPage: React.FC = () => {
                         <div className="absolute top-0 right-0 p-8">
                             <div className={cn(
                                 "px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest",
-                                order.status === 'Delivered' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                                    order.status === 'Scheduled' ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-orange-50 text-orange-600 border border-orange-100"
+                                (order.status === 'Delivered' || order.status === 'Archived') ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                                    order.status === 'Draft' ? "bg-gray-100 text-gray-500 border border-gray-200" :
+                                        order.status === 'Scheduled' ? "bg-blue-50 text-blue-600 border border-blue-100" :
+                                            "bg-orange-50 text-orange-600 border border-orange-100"
                             )}>
                                 {order.status}
                             </div>
@@ -151,7 +167,7 @@ export const OrderDetailPage: React.FC = () => {
                             <div className="absolute top-6 left-0 w-full h-1 bg-gray-100 -z-0" />
                             <div
                                 className="absolute top-6 left-0 h-1 bg-upca-blue transition-all duration-1000 -z-0"
-                                style={{ width: `${(currentStepIndex / (statusSteps.length - 1)) * 100}%` }}
+                                style={{ width: `${Math.max(0, (currentStepIndex / (statusSteps.length - 1)) * 100)}%` }}
                             />
 
                             {statusSteps.map((step, idx) => {

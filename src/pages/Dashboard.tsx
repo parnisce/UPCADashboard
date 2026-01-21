@@ -6,12 +6,14 @@ import { api } from '../services/api';
 import { cn } from '../services/utils';
 import { StatCard } from '../components/StatCard';
 import { useUser } from '../contexts/UserContext';
+import { useOrderStatusStore } from '../stores/servicesStore';
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const { user, isLoading: userLoading } = useUser();
     const [orders, setOrders] = useState<Order[]>([]);
     const [properties, setProperties] = useState<Property[]>([]);
+    const { getOrderStatus } = useOrderStatusStore();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -19,11 +21,18 @@ export const Dashboard: React.FC = () => {
                 api.getOrders(),
                 api.getProperties()
             ]);
-            setOrders(ordersData);
+
+            // Apply updated statuses from store
+            const updatedOrders = ordersData.map(order => {
+                const storedStatus = getOrderStatus(order.id);
+                return storedStatus ? { ...order, status: storedStatus } : order;
+            });
+
+            setOrders(updatedOrders);
             setProperties(propsData);
         };
         fetchData();
-    }, []);
+    }, [getOrderStatus]);
 
     const stats = [
         { label: 'Active Orders', value: orders.filter(o => o.status !== 'Delivered' && o.status !== 'Archived').length, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },

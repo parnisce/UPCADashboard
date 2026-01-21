@@ -78,7 +78,16 @@ export const AppLayout: React.FC = () => {
                         ))}
                     </nav>
 
-                    <div className="p-4 border-t border-gray-100">
+                    <div className="p-4 border-t border-gray-100 space-y-2">
+                        {user?.role === 'upca_admin' && (
+                            <button
+                                onClick={() => navigate('/admin')}
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-upca-blue/5 hover:text-upca-blue transition-all duration-200 w-full mb-2"
+                            >
+                                <LayoutDashboard className="w-5 h-5" />
+                                <span className="font-medium">Admin Panel</span>
+                            </button>
+                        )}
                         <button
                             onClick={handleLogout}
                             className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200 w-full"

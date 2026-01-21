@@ -1,24 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Check, Calendar, MapPin, Camera, Video, Box, Plane, Globe, ShoppingCart, Plus } from 'lucide-react';
 import { api } from '../services/api';
 import type { Property, ServiceType } from '../types';
 import { cn } from '../services/utils';
+import { useServicesStore } from '../stores/servicesStore';
 
-const SERVICES: { id: ServiceType; label: string; icon: any; price: string; cost: number }[] = [
-    { id: 'Real Estate Photography', label: 'Real Estate Photography', icon: Camera, price: '$10', cost: 10 },
-    { id: 'Property Video Tours', label: 'Property Video Tours', icon: Video, price: '$50', cost: 50 },
-    { id: '360 / Virtual Tours', label: '360 / Virtual Tours', icon: Box, price: '$80', cost: 80 },
-    { id: 'Drone Photos & Films', label: 'Drone Photos & Films', icon: Plane, price: '$20', cost: 20 },
-    { id: 'Property Microsites & Agent Websites', label: 'Property Microsites & Agent Websites', icon: Globe, price: '$80', cost: 80 },
-    { id: 'Full-Service Real Estate Marketing', label: 'Full-Service Real Estate Marketing', icon: ShoppingCart, price: '$50', cost: 50 },
-];
+const iconMap: Record<string, any> = {
+    'Camera': Camera,
+    'Video': Video,
+    'Box': Box,
+    'Plane': Plane,
+    'Globe': Globe,
+    'ShoppingCart': ShoppingCart
+};
 
 export const CreateOrderPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const dateParam = queryParams.get('date');
+
+    const { getActiveServices } = useServicesStore();
+    const activeServices = useMemo(() => getActiveServices(), [getActiveServices]);
 
     const [properties, setProperties] = useState<Property[]>([]);
     const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
@@ -75,8 +79,8 @@ export const CreateOrderPage: React.FC = () => {
 
     const calculateTotal = () => {
         return selectedServices.reduce((total, serviceId) => {
-            const service = SERVICES.find(s => s.id === serviceId);
-            return total + (service?.cost || 0);
+            const service = activeServices.find(s => s.id === serviceId);
+            return total + (service?.basePrice || 0);
         }, 0);
     };
 
@@ -180,8 +184,8 @@ export const CreateOrderPage: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {SERVICES.map((service) => {
-                                const Icon = service.icon;
+                            {activeServices.map((service) => {
+                                const Icon = iconMap[service.icon || 'Camera'] || Camera;
                                 const isSelected = selectedServices.includes(service.id);
                                 return (
                                     <button
@@ -202,8 +206,8 @@ export const CreateOrderPage: React.FC = () => {
                                             <Icon className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-gray-900 leading-tight">{service.label}</p>
-                                            <p className="text-sm text-upca-blue font-bold mt-1">{service.price}</p>
+                                            <p className="font-bold text-gray-900 leading-tight">{service.name}</p>
+                                            <p className="text-sm text-upca-blue font-bold mt-1">${service.basePrice}</p>
                                         </div>
                                         {isSelected && (
                                             <div className="absolute top-4 right-4 w-6 h-6 bg-upca-blue rounded-full flex items-center justify-center text-white">

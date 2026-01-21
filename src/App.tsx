@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from './layouts/AppLayout';
+import { AdminLayout } from './layouts/AdminLayout';
 import { Dashboard } from './pages/Dashboard';
 import { OrdersPage } from './pages/OrdersPage';
 import { PropertiesPage } from './pages/PropertiesPage';
@@ -17,31 +18,54 @@ import { BookingsPage } from './pages/BookingsPage';
 import { PaymentMethodsPage } from './pages/PaymentMethodsPage';
 import { SupportPage } from './pages/SupportPage';
 
+// Admin Pages
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminServicesPage } from './pages/admin/AdminServicesPage';
+import { AdminBookingsPage } from './pages/admin/AdminBookingsPage';
+import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
+import { AdminMessagesPage } from './pages/admin/AdminMessagesPage';
+import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage';
+
 import { UserProvider } from './contexts/UserContext';
+
+import { NotificationProvider } from './contexts/NotificationContext';
 
 function App() {
   return (
     <UserProvider>
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/login" element={<LoginPage />} />
+      <NotificationProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<LoginPage />} />
 
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/orders/new" element={<CreateOrderPage />} />
-          <Route path="/orders/:id" element={<OrderDetailPage />} />
-          <Route path="/properties" element={<PropertiesPage />} />
-          <Route path="/properties/new" element={<AddPropertyPage />} />
-          <Route path="/properties/edit/:id" element={<EditPropertyPage />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/bookings" element={<BookingsPage />} />
-          <Route path="/deliverables" element={<DeliverablesPage />} />
-          <Route path="/billing" element={<BillingPage />} />
-          <Route path="/billing/payment-methods" element={<PaymentMethodsPage />} />
-          <Route path="/support" element={<SupportPage />} />
-        </Route>
-      </Routes>
+          {/* Client Routes */}
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/new" element={<CreateOrderPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/properties" element={<PropertiesPage />} />
+            <Route path="/properties/new" element={<AddPropertyPage />} />
+            <Route path="/properties/edit/:id" element={<EditPropertyPage />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/bookings" element={<BookingsPage />} />
+            <Route path="/deliverables" element={<DeliverablesPage />} />
+            <Route path="/billing" element={<BillingPage />} />
+            <Route path="/billing/payment-methods" element={<PaymentMethodsPage />} />
+            <Route path="/support" element={<SupportPage />} />
+          </Route>
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="services" element={<AdminServicesPage />} />
+            <Route path="bookings" element={<AdminBookingsPage />} />
+            <Route path="orders" element={<AdminOrdersPage />} />
+            <Route path="orders/:id" element={<AdminOrderDetailPage />} />
+            <Route path="messages" element={<AdminMessagesPage />} />
+          </Route>
+        </Routes>
+      </NotificationProvider>
     </UserProvider>
   );
 }
