@@ -35,8 +35,10 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get("redirect");
+
     if (redirect) {
-      window.history.replaceState({}, "", redirect);
+      const clean = redirect.startsWith("/") ? redirect : "/" + redirect;
+      window.history.replaceState({}, "", clean);
     }
   }, []);
 
