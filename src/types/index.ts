@@ -40,6 +40,7 @@ export interface Order {
     shootDate: string;
     agentName: string;
     createdAt: string;
+    paymentStatus?: 'pending' | 'confirmed' | 'paid';
     deliverables?: Deliverable[];
 }
 
@@ -48,6 +49,7 @@ export interface Deliverable {
     type: 'photo' | 'video' | '360' | 'drone' | 'microsite';
     label: string;
     url: string;
+    serviceId?: string;
     isWebOptimized: boolean;
     isPrintOptimized: boolean;
 }

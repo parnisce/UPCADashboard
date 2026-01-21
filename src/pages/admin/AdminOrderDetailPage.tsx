@@ -16,8 +16,6 @@ import {
 import type { Order, OrderStatus } from '../../types';
 import { api } from '../../services/api';
 import { cn } from '../../services/utils';
-import { useOrderStatusStore, useAssetsStore, type Asset } from '../../stores/servicesStore';
-
 import { useNotification } from '../../contexts/NotificationContext';
 
 export const AdminOrderDetailPage: React.FC = () => {
@@ -27,29 +25,47 @@ export const AdminOrderDetailPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'confirmed' | 'paid'>('pending');
 
-    const { updateOrderStatus: saveOrderStatus, getOrderStatus, updatePaymentStatus, getPaymentStatus } = useOrderStatusStore();
-    const { addAsset, removeAsset, getOrderAssets } = useAssetsStore();
     const { showNotification } = useNotification();
     const [uploadUrl, setUploadUrl] = useState('');
     const [uploadingService, setUploadingService] = useState<string | null>(null);
 
-    const handleAddAsset = (serviceName: string, type: Asset['type']) => {
+    const handleAddAsset = async (serviceName: string, type: string) => {
         if (!order || !uploadUrl) return;
 
-        addAsset(order.id, {
-            id: Math.random().toString(36).substr(2, 9),
-            type,
-            name: type === 'link' ? 'Project Link' : `Asset for ${serviceName}`,
-            url: uploadUrl,
-            serviceId: serviceName
-        });
+        try {
+            await api.addAsset(order.id, {
+                type,
+                name: type === 'link' ? 'Project Link' : `Asset for ${serviceName}`,
+                url: uploadUrl,
+                serviceId: serviceName
+            });
 
-        showNotification('Asset added successfully');
-        setUploadUrl('');
-        setUploadingService(null);
+            showNotification('Asset added successfully');
+            const updated = await api.getOrderById(order.id);
+            if (updated) setOrder(updated);
+
+            setUploadUrl('');
+            setUploadingService(null);
+        } catch (error) {
+            console.error(error);
+            showNotification('Failed to add asset', 'error');
+        }
     };
 
-    const assets = order ? getOrderAssets(order.id) : [];
+    const handleRemoveAsset = async (assetId: string) => {
+        if (!order) return;
+        try {
+            await api.deleteAsset(assetId);
+            showNotification('Asset removed');
+            const updated = await api.getOrderById(order.id);
+            if (updated) setOrder(updated);
+        } catch (error) {
+            console.error(error);
+            showNotification('Failed to remove asset', 'error');
+        }
+    };
+
+    const assets = order?.deliverables || [];
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -57,17 +73,10 @@ export const AdminOrderDetailPage: React.FC = () => {
             try {
                 const data = await api.getOrderById(id);
                 if (data) {
-                    const storedStatus = getOrderStatus(data.id);
-                    if (storedStatus) {
-                        data.status = storedStatus;
-                    }
-
-                    const storedPayment = getPaymentStatus(data.id);
-                    if (storedPayment) {
-                        setPaymentStatus(storedPayment);
-                    }
-
                     setOrder(data);
+                    if (data.paymentStatus) {
+                        setPaymentStatus(data.paymentStatus);
+                    }
                 } else {
                     setOrder(null);
                 }
@@ -76,22 +85,34 @@ export const AdminOrderDetailPage: React.FC = () => {
             }
         };
         fetchOrder();
-    }, [id, getOrderStatus, getPaymentStatus]);
+    }, [id]);
 
-    const handleStatusChange = (newStatus: OrderStatus) => {
+    const handleStatusChange = async (newStatus: OrderStatus) => {
         if (order) {
+            // Optimistic update
+            const prevStatus = order.status;
             setOrder({ ...order, status: newStatus });
-            // Save to store for real-time sync with client dashboard
-            saveOrderStatus(order.id, newStatus);
-            showNotification(`Order status updated to ${newStatus}`);
+
+            try {
+                await api.updateOrderStatus(order.id, newStatus);
+                showNotification(`Order status updated to ${newStatus}`);
+            } catch (error) {
+                setOrder({ ...order, status: prevStatus });
+                showNotification('Failed to update status', 'error');
+            }
         }
     };
 
-    const handleConfirmPayment = () => {
+    const handleConfirmPayment = async () => {
         if (order) {
             setPaymentStatus('confirmed');
-            updatePaymentStatus(order.id, 'confirmed');
-            showNotification('Payment status updated to Confirmed');
+            try {
+                await api.updatePaymentStatus(order.id, 'confirmed');
+                showNotification('Payment status updated to Confirmed');
+            } catch (error) {
+                setPaymentStatus('pending');
+                showNotification('Failed to update payment status', 'error');
+            }
         }
     };
 
@@ -128,7 +149,7 @@ export const AdminOrderDetailPage: React.FC = () => {
         'Archived': 'Archived'
     };
 
-    const totalPrice = order.services.length * 350; // Mock calculation
+    const totalPrice = order.services.length * 350;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -213,10 +234,10 @@ export const AdminOrderDetailPage: React.FC = () => {
                                                     <div key={asset.id} className="flex items-center justify-between text-sm bg-white p-2 rounded-lg border border-gray-200">
                                                         <a href={asset.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline">
                                                             {asset.type === 'link' ? <Globe className="w-4 h-4" /> : <Download className="w-4 h-4" />}
-                                                            {asset.name}
+                                                            {asset.label}
                                                         </a>
                                                         <button
-                                                            onClick={() => removeAsset(order.id, asset.id)}
+                                                            onClick={() => handleRemoveAsset(asset.id)}
                                                             className="text-red-500 hover:text-red-700"
                                                         >
                                                             <X className="w-4 h-4" />
@@ -286,7 +307,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                                 </div>
                                 <div className="flex-1 pb-6">
                                     <p className="font-bold text-gray-900">Order Created</p>
-                                    <p className="text-sm text-gray-500">{order.createdAt}</p>
+                                    <p className="text-sm text-gray-500">{order.createdAt && new Date(order.createdAt).toLocaleDateString()}</p>
                                 </div>
                             </div>
                             <div className="flex gap-4">
@@ -344,9 +365,9 @@ export const AdminOrderDetailPage: React.FC = () => {
                                 </option>
                             ))}
                         </select>
-                        <button className="w-full mt-3 px-4 py-3 bg-upca-blue text-white rounded-xl font-semibold hover:bg-upca-blue/90 transition-colors">
-                            Update Status
-                        </button>
+                        <div className="mt-3 text-xs text-gray-500 text-center">
+                            Status updates are saved automatically
+                        </div>
                     </div>
 
                     {/* Payment Management */}
@@ -384,6 +405,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                     <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                         <h3 className="font-bold text-gray-900 mb-4">Quick Actions</h3>
                         <div className="space-y-2">
+                            {/* ... same as before */}
                             <button className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl font-medium text-gray-700 transition-colors">
                                 <Download className="w-4 h-4" />
                                 Download Invoice

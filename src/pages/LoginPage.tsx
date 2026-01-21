@@ -1,16 +1,35 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export const LoginPage: React.FC = () => {
-    const [email, setEmail] = useState('agent@example.com');
-    const [password, setPassword] = useState('password');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Simple mock logic
-        navigate('/dashboard');
+        setLoading(true);
+        setError(null);
+
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) throw error;
+
+            navigate('/dashboard');
+        } catch (err: any) {
+            console.error('Login failed:', err);
+            setError(err.message || 'Failed to sign in');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -24,6 +43,13 @@ export const LoginPage: React.FC = () => {
                 <div className="bg-white p-8 rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100">
                     <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Sign In</h2>
                     <p className="text-gray-500 text-sm text-center mb-8">Access your orders and property assets</p>
+
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm">
+                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                            {error}
+                        </div>
+                    )}
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div className="space-y-2">
@@ -66,10 +92,11 @@ export const LoginPage: React.FC = () => {
 
                         <button
                             type="submit"
-                            className="w-full bg-upca-blue text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
+                            disabled={loading}
+                            className="w-full bg-upca-blue text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            Sign In
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            {loading ? 'Signing In...' : 'Sign In'}
+                            {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                         </button>
                     </form>
                 </div>

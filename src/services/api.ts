@@ -1,196 +1,279 @@
-import type { Order, Property, User } from '../types';
+import { supabase } from '../lib/supabase';
+import type { Order, Property, User, ServiceType, OrderStatus } from '../types';
 
-const STORAGE_KEYS = {
-    PROPERTIES: 'upca_properties',
-    ORDERS: 'upca_orders',
-    USER: 'upca_user',
-};
-
-const INITIAL_PROPERTIES: Property[] = [
-    {
-        id: 'prop-1',
-        address: '123 Luxury Ave, Toronto, ON',
-        thumbnail: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=400&q=80',
-        status: 'Active listing',
-        beds: 4,
-        baths: 3,
-        sqft: 2500,
-        price: 1250000,
-        mls: 'C1234567',
-    },
-    {
-        id: 'prop-2',
-        address: '456 Modern Way, Oakville, ON',
-        thumbnail: 'https://images.unsplash.com/photo-1600585154340-be6199f7d009?auto=format&fit=crop&w=400&q=80',
-        status: 'Coming soon',
-        beds: 3,
-        baths: 2,
-        sqft: 1800,
-        price: 899000,
-        mls: 'C7654321',
-    }
-];
-
-const INITIAL_ORDERS: Order[] = [
-    {
-        id: 'ord-1',
-        propertyId: 'prop-1',
-        propertyAddress: '123 Luxury Ave, Toronto, ON',
-        services: ['Real Estate Photography', 'Property Video Tours', 'Drone Photos & Films'],
-        status: 'Delivered',
-        shootDate: '2025-10-15',
-        agentName: 'John Agent',
-        createdAt: '2025-10-10',
-        deliverables: [
-            { id: 'd-1', type: 'photo', label: 'HDR Photography Package', url: '#', isWebOptimized: true, isPrintOptimized: true },
-            { id: 'd-2', type: 'video', label: 'Cinematic Video Tour', url: '#', isWebOptimized: true, isPrintOptimized: false },
-            { id: 'd-3', type: 'drone', label: 'Aerial Photos & B-Roll', url: '#', isWebOptimized: true, isPrintOptimized: true },
-            { id: 'd-4', type: 'microsite', label: 'Property Microsite', url: 'https://123luxuryave.upca.ca', isWebOptimized: true, isPrintOptimized: false },
-        ]
-    },
-    {
-        id: 'ord-2',
-        propertyId: 'prop-2',
-        propertyAddress: '456 Modern Way, Oakville, ON',
-        services: ['Real Estate Photography', '360 / Virtual Tours'],
-        status: 'Scheduled',
-        shootDate: '2026-01-20',
-        agentName: 'John Agent',
-        createdAt: '2026-01-10',
-        deliverables: [
-            { id: 'd-5', type: 'photo', label: 'HDR Photography Package', url: '#', isWebOptimized: true, isPrintOptimized: true },
-            { id: 'd-6', type: '360', label: 'Matterport 3D Tour', url: '#', isWebOptimized: true, isPrintOptimized: false },
-        ]
-    }
-];
-
-const INITIAL_USER: User = {
-    id: 'u-1',
-    name: 'John Agent',
-    email: 'john@upca.ca',
-    role: 'agent',
-    brokerage: 'Elite Realty Toronto',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-};
-
-// Helper to get from localStorage
-const getStoredData = <T>(key: string, initialData: T[]): T[] => {
-    const stored = localStorage.getItem(key);
-    if (!stored) {
-        localStorage.setItem(key, JSON.stringify(initialData));
-        return initialData;
-    }
-    return JSON.parse(stored);
-};
-
-// Helper to save to localStorage
-const setStoredData = <T>(key: string, data: T[]): void => {
-    try {
-        localStorage.setItem(key, JSON.stringify(data));
-    } catch (e) {
-        if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-            throw new Error('Storage limit reached. Please remove old properties or upload smaller images.');
-        }
-        throw e;
-    }
-};
-
-// Helper to get from localStorage (single item)
-const getStoredItem = <T>(key: string, initialData: T): T => {
-    const stored = localStorage.getItem(key);
-    if (!stored) {
-        try {
-            localStorage.setItem(key, JSON.stringify(initialData));
-        } catch (e) {
-            console.error('Failed to set initial data', e);
-        }
-        return initialData;
-    }
-    return JSON.parse(stored);
-};
+const transformOrder = (row: any): Order => ({
+    id: row.id,
+    propertyId: row.property_id || '',
+    propertyAddress: row.properties?.address || '',
+    services: row.order_services?.map((s: any) => s.service_name as ServiceType) || [],
+    status: row.status as OrderStatus,
+    paymentStatus: row.payment_status as 'pending' | 'confirmed' | 'paid',
+    shootDate: row.shoot_date,
+    agentName: row.profiles?.full_name || 'Unknown Agent',
+    createdAt: row.created_at,
+    deliverables: row.assets?.map((a: any) => ({
+        id: a.id,
+        type: a.type,
+        label: a.name,
+        url: a.url,
+        serviceId: a.service_id,
+        isWebOptimized: true,
+        isPrintOptimized: false
+    })) || []
+});
 
 export const api = {
-    getCurrentUser: async () => getStoredItem(STORAGE_KEYS.USER, INITIAL_USER),
+    // User Management
+    getCurrentUser: async (): Promise<User | null> => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
 
-    updateUser: async (user: Partial<User>) => {
-        const currentUser = getStoredItem(STORAGE_KEYS.USER, INITIAL_USER);
-        const updated = { ...currentUser, ...user };
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated));
-        return updated;
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        return {
+            id: user.id,
+            name: profile?.full_name || user.email || 'User',
+            email: user.email || '',
+            role: (profile?.role as any) || 'agent',
+            brokerage: profile?.brokerage_name,
+            avatar: profile?.avatar_url
+        };
     },
 
-    getProperties: async () => getStoredData(STORAGE_KEYS.PROPERTIES, INITIAL_PROPERTIES),
+    updateUser: async (updates: Partial<User>) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
 
-    getPropertyById: async (id: string) => {
-        const props = getStoredData<Property>(STORAGE_KEYS.PROPERTIES, INITIAL_PROPERTIES);
-        return props.find(p => p.id === id);
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                full_name: updates.name,
+                brokerage_name: updates.brokerage,
+                avatar_url: updates.avatar
+            })
+            .eq('id', user.id);
+
+        if (error) throw error;
+        return { ...updates, id: user.id } as User;
+    },
+
+    // Properties
+    getProperties: async (): Promise<Property[]> => {
+        const { data, error } = await supabase
+            .from('properties')
+            .select('*');
+
+        if (error) {
+            console.error('Error fetching properties:', error);
+            return [];
+        }
+
+        return data.map((p: any) => ({
+            id: p.id,
+            address: p.address,
+            thumbnail: p.thumbnail_url || '',
+            status: p.status,
+            beds: p.beds,
+            baths: Number(p.baths),
+            sqft: p.sqft,
+            price: Number(p.price),
+            mls: p.mls_number
+        }));
+    },
+
+    getPropertyById: async (id: string): Promise<Property | undefined> => {
+        const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) return undefined;
+
+        return {
+            id: data.id,
+            address: data.address,
+            thumbnail: data.thumbnail_url || '',
+            status: data.status,
+            beds: data.beds,
+            baths: Number(data.baths),
+            sqft: data.sqft,
+            price: Number(data.price),
+            mls: data.mls_number
+        };
     },
 
     createProperty: async (property: Omit<Property, 'id'>) => {
-        const props = getStoredData<Property>(STORAGE_KEYS.PROPERTIES, INITIAL_PROPERTIES);
-        const newProperty = {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data, error } = await supabase
+            .from('properties')
+            .insert({
+                address: property.address,
+                thumbnail_url: property.thumbnail,
+                status: property.status,
+                beds: property.beds,
+                baths: property.baths,
+                sqft: property.sqft,
+                price: property.price,
+                mls_number: property.mls,
+                agent_id: user?.id
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return {
             ...property,
-            id: `prop-${Math.random().toString(36).substr(2, 9)}`,
-        };
-        setStoredData(STORAGE_KEYS.PROPERTIES, [...props, newProperty]);
-        return newProperty;
+            id: data.id
+        } as Property;
     },
 
     updateProperty: async (id: string, property: Partial<Property>) => {
-        const props = getStoredData<Property>(STORAGE_KEYS.PROPERTIES, INITIAL_PROPERTIES);
-        const updatedProps = props.map(p => p.id === id ? { ...p, ...property } : p);
-        setStoredData(STORAGE_KEYS.PROPERTIES, updatedProps);
-        return updatedProps.find(p => p.id === id);
+        const updates: any = {};
+        if (property.address) updates.address = property.address;
+        if (property.thumbnail) updates.thumbnail_url = property.thumbnail;
+        if (property.status) updates.status = property.status;
+        if (property.beds) updates.beds = property.beds;
+        if (property.baths) updates.baths = property.baths;
+        if (property.sqft) updates.sqft = property.sqft;
+        if (property.price) updates.price = property.price;
+        if (property.mls) updates.mls_number = property.mls;
+
+        const { error } = await supabase
+            .from('properties')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) throw error;
+        return api.getPropertyById(id);
     },
 
     deleteProperty: async (id: string) => {
-        const props = getStoredData<Property>(STORAGE_KEYS.PROPERTIES, INITIAL_PROPERTIES);
-        const filtered = props.filter(p => p.id !== id);
-        setStoredData(STORAGE_KEYS.PROPERTIES, filtered);
-        return true;
+        const { error } = await supabase.from('properties').delete().eq('id', id);
+        return !error;
     },
 
-    getOrders: async () => getStoredData(STORAGE_KEYS.ORDERS, INITIAL_ORDERS),
+    // Orders
+    getOrders: async (): Promise<Order[]> => {
+        const { data, error } = await supabase
+            .from('orders')
+            .select(`
+                *,
+                properties (address),
+                profiles:agent_id (full_name),
+                order_services (service_name),
+                assets (*)
+            `)
+            .order('created_at', { ascending: false });
 
-    getOrderById: async (id: string) => {
-        const orders = getStoredData<Order>(STORAGE_KEYS.ORDERS, INITIAL_ORDERS);
-        return orders.find(o => o.id === id);
+        if (error) {
+            console.error('Error fetching orders:', error);
+            return [];
+        }
+        return data.map(transformOrder);
+    },
+
+    getOrderById: async (id: string): Promise<Order | undefined> => {
+        const { data, error } = await supabase
+            .from('orders')
+            .select(`
+                *,
+                properties (address),
+                profiles:agent_id (full_name),
+                order_services (service_name),
+                assets (*)
+            `)
+            .eq('id', id)
+            .single();
+
+        if (error) return undefined;
+        return transformOrder(data);
     },
 
     createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName'>) => {
-        const orders = getStoredData<Order>(STORAGE_KEYS.ORDERS, INITIAL_ORDERS);
-        const user = getStoredItem(STORAGE_KEYS.USER, INITIAL_USER);
-        const newOrder: Order = {
-            ...order,
-            id: `ord-${Math.random().toString(36).substr(2, 9)}`,
-            status: 'Scheduled',
-            agentName: user.name,
-            createdAt: new Date().toISOString().split('T')[0],
-        };
-        setStoredData(STORAGE_KEYS.ORDERS, [...orders, newOrder]);
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // 1. Create Order
+        const { data: orderData, error: orderError } = await supabase
+            .from('orders')
+            .insert({
+                property_id: order.propertyId,
+                status: 'Scheduled',
+                shoot_date: order.shootDate,
+                agent_id: user?.id,
+                payment_status: 'pending'
+            })
+            .select()
+            .single();
+
+        if (orderError) throw orderError;
+
+        // 2. Add Services
+        if (order.services && order.services.length > 0) {
+            const services = order.services.map(s => ({
+                order_id: orderData.id,
+                service_name: s
+            }));
+            await supabase.from('order_services').insert(services);
+        }
+
+        const newOrder = await api.getOrderById(orderData.id);
+        if (!newOrder) throw new Error('Failed to retrieve created order');
         return newOrder;
     },
 
-    getInvoices: async () => [
-        {
-            id: 'inv-1',
-            orderId: 'ord-1',
-            date: '2025-10-16',
-            amount: 450.00,
-            status: 'Paid' as const,
-            services: [{ name: 'Real Estate Photography' as const, price: 450.00 }]
-        }
-    ],
+    updateOrderStatus: async (id: string, status: OrderStatus) => {
+        const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+        if (error) throw error;
+    },
 
-    getMessagesByOrder: async (orderId: string) => [
-        {
-            id: 'm-1',
-            orderId,
-            senderId: 'upca-1',
-            senderName: 'UPCA Team',
-            content: 'Your photos are now ready for review!',
-            timestamp: '2025-10-15T14:30:00Z',
-            isAdmin: true,
-        }
-    ]
+    updatePaymentStatus: async (id: string, status: string) => {
+        const { error } = await supabase.from('orders').update({ payment_status: status }).eq('id', id);
+        if (error) throw error;
+    },
+
+    // Invoices (Mock for now)
+    getInvoices: async () => [],
+
+    // Messages
+    getMessagesByOrder: async (orderId: string) => {
+        const { data, error } = await supabase
+            .from('messages')
+            .select('*, profiles:sender_id(full_name)')
+            .eq('order_id', orderId)
+            .order('created_at', { ascending: true });
+
+        if (error) return [];
+
+        return data.map((m: any) => ({
+            id: m.id,
+            orderId: m.order_id,
+            senderId: m.sender_id,
+            senderName: m.profiles?.full_name || 'User',
+            content: m.content,
+            timestamp: m.created_at,
+            isAdmin: false
+        }));
+    },
+
+    addAsset: async (orderId: string, asset: any) => {
+        const { error } = await supabase.from('assets').insert({
+            order_id: orderId,
+            type: asset.type,
+            name: asset.name,
+            url: asset.url,
+            service_id: asset.serviceId
+        });
+        if (error) throw error;
+    },
+
+    deleteAsset: async (assetId: string) => {
+        const { error } = await supabase.from('assets').delete().eq('id', assetId);
+        if (error) throw error;
+    }
 };
