@@ -215,16 +215,20 @@ export const api = {
     },
 
     createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName'>) => {
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData.user;
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (!data.user) throw new Error('Not authenticated');
 
+        const userId = data.user.id;
+
+        // 1. Create Order (agent_id MUST be current user)
         const { data: orderData, error: orderError } = await supabase
             .from('orders')
             .insert({
                 property_id: order.propertyId,
                 status: 'Scheduled',
                 shoot_date: order.shootDate,
-                agent_id: user?.id,
+                agent_id: userId,
                 payment_status: 'pending',
             })
             .select()
@@ -232,18 +236,22 @@ export const api = {
 
         if (orderError) throw orderError;
 
+        // 2. Add Services
         if (order.services && order.services.length > 0) {
             const services = order.services.map((s) => ({
                 order_id: orderData.id,
                 service_name: s,
             }));
-            await supabase.from('order_services').insert(services);
+
+            const { error: servicesError } = await supabase.from('order_services').insert(services);
+            if (servicesError) throw servicesError;
         }
 
         const newOrder = await api.getOrderById(orderData.id);
         if (!newOrder) throw new Error('Failed to retrieve created order');
         return newOrder;
     },
+
 
     updateOrderStatus: async (id: string, status: OrderStatus) => {
         const { error } = await supabase.from('orders').update({ status }).eq('id', id);
