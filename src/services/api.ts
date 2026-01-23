@@ -31,13 +31,19 @@ async function requireUser() {
 }
 
 export const api = {
+    // =========================
     // User Management
+    // =========================
     getCurrentUser: async (): Promise<User | null> => {
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData.user;
+        const { data } = await supabase.auth.getUser();
+        const user = data.user;
         if (!user) return null;
 
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
 
         return {
             id: user.id,
@@ -65,11 +71,14 @@ export const api = {
         return { ...updates, id: user.id } as User;
     },
 
-    // ✅ Properties (ONLY current user)
+    // =========================
+    // Properties (ONLY current user)
+    // =========================
     getProperties: async (): Promise<Property[]> => {
         const user = await requireUser();
 
-        // IMPORTANT: filter by ownership
+        // IMPORTANT: only show properties owned by current user
+        // (your schema has BOTH user_id and agent_id, so support either)
         const { data, error } = await supabase
             .from('properties')
             .select('*')
@@ -97,7 +106,7 @@ export const api = {
     getPropertyById: async (id: string): Promise<Property | undefined> => {
         const user = await requireUser();
 
-        // IMPORTANT: also protect single fetch
+        // IMPORTANT: protect single fetch too (must belong to user)
         const { data, error } = await supabase
             .from('properties')
             .select('*')
@@ -120,6 +129,7 @@ export const api = {
         };
     },
 
+    // IMPORTANT: attach property to CURRENT user (not passed-in user)
     createProperty: async (property: Omit<Property, 'id'>) => {
         const user = await requireUser();
         const ownerId = user.id;
@@ -136,7 +146,7 @@ export const api = {
                 price: property.price,
                 mls_number: property.mls ?? null,
 
-                // ✅ attach to current user
+                // ✅ attach to current logged-in user
                 user_id: ownerId,
                 agent_id: ownerId,
             })
@@ -152,15 +162,18 @@ export const api = {
     },
 
     updateProperty: async (id: string, property: Partial<Property>) => {
+        // Optional: you can also enforce ownership here by adding `.or(...)` like getPropertyById,
+        // but ideally RLS handles it.
+
         const updates: any = {};
-        if (property.address) updates.address = property.address;
-        if (property.thumbnail) updates.thumbnail_url = property.thumbnail;
-        if (property.status) updates.status = property.status;
+        if (property.address !== undefined) updates.address = property.address;
+        if (property.thumbnail !== undefined) updates.thumbnail_url = property.thumbnail;
+        if (property.status !== undefined) updates.status = property.status;
         if (property.beds !== undefined) updates.beds = property.beds;
         if (property.baths !== undefined) updates.baths = property.baths;
         if (property.sqft !== undefined) updates.sqft = property.sqft;
         if (property.price !== undefined) updates.price = property.price;
-        if (property.mls !== undefined) updates.mls_number = property.mls;
+        if (property.mls !== undefined) updates.mls_number = property.mls ?? null;
 
         const { error } = await supabase.from('properties').update(updates).eq('id', id);
         if (error) throw error;
@@ -173,8 +186,14 @@ export const api = {
         return !error;
     },
 
+    // =========================
     // Orders
+    // =========================
     getOrders: async (): Promise<Order[]> => {
+        const user = await requireUser();
+
+        // IMPORTANT: only show orders owned by the current user
+        // (admin view later can remove this filter)
         const { data, error } = await supabase
             .from('orders')
             .select(
@@ -186,16 +205,20 @@ export const api = {
           assets (*)
         `
             )
+            .eq('agent_id', user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching orders:', error);
             return [];
         }
-        return data.map(transformOrder);
+
+        return (data ?? []).map(transformOrder);
     },
 
     getOrderById: async (id: string): Promise<Order | undefined> => {
+        const user = await requireUser();
+
         const { data, error } = await supabase
             .from('orders')
             .select(
@@ -208,27 +231,26 @@ export const api = {
         `
             )
             .eq('id', id)
+            .eq('agent_id', user.id)
             .single();
 
         if (error) return undefined;
         return transformOrder(data);
     },
 
+    // ✅ SUPER IMPORTANT: agent_id MUST be current logged-in user
     createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName'>) => {
-        const { data, error } = await supabase.auth.getUser();
-        if (error) throw error;
-        if (!data.user) throw new Error('Not authenticated');
+        const user = await requireUser();
+        const userId = user.id;
 
-        const userId = data.user.id;
-
-        // 1. Create Order (agent_id MUST be current user)
+        // 1) Create Order (RLS usually checks agent_id = auth.uid())
         const { data: orderData, error: orderError } = await supabase
             .from('orders')
             .insert({
                 property_id: order.propertyId,
                 status: 'Scheduled',
                 shoot_date: order.shootDate,
-                agent_id: userId,
+                agent_id: userId, // ✅ MUST BE current user
                 payment_status: 'pending',
             })
             .select()
@@ -236,7 +258,7 @@ export const api = {
 
         if (orderError) throw orderError;
 
-        // 2. Add Services
+        // 2) Add Services
         if (order.services && order.services.length > 0) {
             const services = order.services.map((s) => ({
                 order_id: orderData.id,
@@ -249,9 +271,9 @@ export const api = {
 
         const newOrder = await api.getOrderById(orderData.id);
         if (!newOrder) throw new Error('Failed to retrieve created order');
+
         return newOrder;
     },
-
 
     updateOrderStatus: async (id: string, status: OrderStatus) => {
         const { error } = await supabase.from('orders').update({ status }).eq('id', id);
@@ -266,7 +288,9 @@ export const api = {
     // Invoices (Mock)
     getInvoices: async () => [],
 
+    // =========================
     // Messages
+    // =========================
     getMessagesByOrder: async (orderId: string) => {
         const { data, error } = await supabase
             .from('messages')
@@ -276,7 +300,7 @@ export const api = {
 
         if (error) return [];
 
-        return data.map((m: any) => ({
+        return (data ?? []).map((m: any) => ({
             id: m.id,
             orderId: m.order_id,
             senderId: m.sender_id,
