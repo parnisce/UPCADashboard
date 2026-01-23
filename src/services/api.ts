@@ -23,15 +23,32 @@ const transformOrder = (row: any): Order => ({
         })) || [],
 });
 
+function mapPropertyRow(p: any): Property {
+    return {
+        id: p.id,
+        address: p.address,
+        thumbnail: p.thumbnail_url || '',
+        status: p.status,
+        beds: p.beds,
+        baths: Number(p.baths),
+        sqft: p.sqft,
+        price: Number(p.price),
+        mls: p.mls_number,
+    };
+}
+
 export const api = {
     // User Management
     getCurrentUser: async (): Promise<User | null> => {
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
         if (!user) return null;
 
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
 
         return {
             id: user.id,
@@ -44,12 +61,11 @@ export const api = {
     },
 
     updateUser: async (updates: Partial<User>) => {
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
         if (!user) throw new Error('Not authenticated');
 
-        const { error } = await supabase
+        const { error: updateError } = await supabase
             .from('profiles')
             .update({
                 full_name: updates.name,
@@ -58,61 +74,60 @@ export const api = {
             })
             .eq('id', user.id);
 
-        if (error) throw error;
+        if (updateError) throw updateError;
+
         return { ...updates, id: user.id } as User;
     },
 
-    // Properties
+    // =========================
+    // Properties (USER SCOPED)
+    // =========================
+
+    // ✅ Only return properties owned by the current user
     getProperties: async (): Promise<Property[]> => {
-        const { data, error } = await supabase.from('properties').select('*');
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('agent_id', user.id) // ✅ IMPORTANT
+            .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching properties:', error);
             return [];
         }
 
-        return data.map((p: any) => ({
-            id: p.id,
-            address: p.address,
-            thumbnail: p.thumbnail_url || '',
-            status: p.status,
-            beds: p.beds,
-            baths: Number(p.baths),
-            sqft: p.sqft,
-            price: Number(p.price),
-            mls: p.mls_number,
-        }));
+        return (data ?? []).map(mapPropertyRow);
     },
 
+    // ✅ Only allow reading a property if it belongs to the user
     getPropertyById: async (id: string): Promise<Property | undefined> => {
-        const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
-        if (error) return undefined;
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!user) return undefined;
 
-        return {
-            id: data.id,
-            address: data.address,
-            thumbnail: data.thumbnail_url || '',
-            status: data.status,
-            beds: data.beds,
-            baths: Number(data.baths),
-            sqft: data.sqft,
-            price: Number(data.price),
-            mls: data.mls_number,
-        };
+        const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('id', id)
+            .eq('agent_id', user.id) // ✅ IMPORTANT
+            .single();
+
+        if (error) return undefined;
+        return mapPropertyRow(data);
     },
 
-    // ✅ UPDATED: accepts optional user_id (so AddPropertyPage can pass it),
-    // but we ALWAYS use the logged-in user id to satisfy RLS safely.
-    createProperty: async (property: Omit<Property, 'id'> & { user_id?: string }) => {
-        const {
-            data: { user },
-            error: userError,
-        } = await supabase.auth.getUser();
-
+    // ✅ Create property tied to the logged in user
+    // NOTE: No need to pass user_id from the page.
+    createProperty: async (property: Omit<Property, 'id'>) => {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
         if (!user) throw new Error('Not authenticated');
 
-        const ownerId = user.id; // always trust the authenticated user
+        const ownerId = user.id;
 
         const { data, error } = await supabase
             .from('properties')
@@ -126,10 +141,9 @@ export const api = {
                 price: property.price,
                 mls_number: property.mls ?? null,
 
-                // ✅ set both (your schema has both columns)
-                // This satisfies whichever column your RLS policy checks.
-                user_id: ownerId,
+                // ✅ owner columns (your schema has both)
                 agent_id: ownerId,
+                user_id: ownerId,
             })
             .select()
             .single();
@@ -142,62 +156,81 @@ export const api = {
         } as Property;
     },
 
+    // ✅ Only update property if it belongs to the user
     updateProperty: async (id: string, property: Partial<Property>) => {
-        const updates: any = {};
-        if (property.address) updates.address = property.address;
-        if (property.thumbnail) updates.thumbnail_url = property.thumbnail;
-        if (property.status) updates.status = property.status;
-        if (property.beds) updates.beds = property.beds;
-        if (property.baths) updates.baths = property.baths;
-        if (property.sqft) updates.sqft = property.sqft;
-        if (property.price) updates.price = property.price;
-        if (property.mls) updates.mls_number = property.mls;
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!user) throw new Error('Not authenticated');
 
-        const { error } = await supabase.from('properties').update(updates).eq('id', id);
+        const updates: any = {};
+        if (property.address !== undefined) updates.address = property.address;
+        if (property.thumbnail !== undefined) updates.thumbnail_url = property.thumbnail;
+        if (property.status !== undefined) updates.status = property.status;
+        if (property.beds !== undefined) updates.beds = property.beds;
+        if (property.baths !== undefined) updates.baths = property.baths;
+        if (property.sqft !== undefined) updates.sqft = property.sqft;
+        if (property.price !== undefined) updates.price = property.price;
+        if (property.mls !== undefined) updates.mls_number = property.mls;
+
+        const { error } = await supabase
+            .from('properties')
+            .update(updates)
+            .eq('id', id)
+            .eq('agent_id', user.id); // ✅ IMPORTANT
 
         if (error) throw error;
+
         return api.getPropertyById(id);
     },
 
+    // ✅ Only delete property if it belongs to the user
     deleteProperty: async (id: string) => {
-        const { error } = await supabase.from('properties').delete().eq('id', id);
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!user) throw new Error('Not authenticated');
+
+        const { error } = await supabase
+            .from('properties')
+            .delete()
+            .eq('id', id)
+            .eq('agent_id', user.id); // ✅ IMPORTANT
+
         return !error;
     },
 
+    // =========================
     // Orders
+    // =========================
+
     getOrders: async (): Promise<Order[]> => {
         const { data, error } = await supabase
             .from('orders')
-            .select(
-                `
-                *,
-                properties (address),
-                profiles:agent_id (full_name),
-                order_services (service_name),
-                assets (*)
-            `
-            )
+            .select(`
+        *,
+        properties (address),
+        profiles:agent_id (full_name),
+        order_services (service_name),
+        assets (*)
+      `)
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching orders:', error);
             return [];
         }
-        return data.map(transformOrder);
+        return (data ?? []).map(transformOrder);
     },
 
     getOrderById: async (id: string): Promise<Order | undefined> => {
         const { data, error } = await supabase
             .from('orders')
-            .select(
-                `
-                *,
-                properties (address),
-                profiles:agent_id (full_name),
-                order_services (service_name),
-                assets (*)
-            `
-            )
+            .select(`
+        *,
+        properties (address),
+        profiles:agent_id (full_name),
+        order_services (service_name),
+        assets (*)
+      `)
             .eq('id', id)
             .single();
 
@@ -206,11 +239,9 @@ export const api = {
     },
 
     createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName'>) => {
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
 
-        // 1. Create Order
         const { data: orderData, error: orderError } = await supabase
             .from('orders')
             .insert({
@@ -225,7 +256,6 @@ export const api = {
 
         if (orderError) throw orderError;
 
-        // 2. Add Services
         if (order.services && order.services.length > 0) {
             const services = order.services.map((s) => ({
                 order_id: orderData.id,
@@ -262,7 +292,7 @@ export const api = {
 
         if (error) return [];
 
-        return data.map((m: any) => ({
+        return (data ?? []).map((m: any) => ({
             id: m.id,
             orderId: m.order_id,
             senderId: m.sender_id,
