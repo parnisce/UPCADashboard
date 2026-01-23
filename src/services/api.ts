@@ -11,28 +11,27 @@ const transformOrder = (row: any): Order => ({
     shootDate: row.shoot_date,
     agentName: row.profiles?.full_name || 'Unknown Agent',
     createdAt: row.created_at,
-    deliverables: row.assets?.map((a: any) => ({
-        id: a.id,
-        type: a.type,
-        label: a.name,
-        url: a.url,
-        serviceId: a.service_id,
-        isWebOptimized: true,
-        isPrintOptimized: false
-    })) || []
+    deliverables:
+        row.assets?.map((a: any) => ({
+            id: a.id,
+            type: a.type,
+            label: a.name,
+            url: a.url,
+            serviceId: a.service_id,
+            isWebOptimized: true,
+            isPrintOptimized: false,
+        })) || [],
 });
 
 export const api = {
     // User Management
     getCurrentUser: async (): Promise<User | null> => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return null;
 
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
         return {
             id: user.id,
@@ -40,12 +39,14 @@ export const api = {
             email: user.email || '',
             role: (profile?.role as any) || 'agent',
             brokerage: profile?.brokerage_name,
-            avatar: profile?.avatar_url
+            avatar: profile?.avatar_url,
         };
     },
 
     updateUser: async (updates: Partial<User>) => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
         const { error } = await supabase
@@ -53,7 +54,7 @@ export const api = {
             .update({
                 full_name: updates.name,
                 brokerage_name: updates.brokerage,
-                avatar_url: updates.avatar
+                avatar_url: updates.avatar,
             })
             .eq('id', user.id);
 
@@ -63,9 +64,7 @@ export const api = {
 
     // Properties
     getProperties: async (): Promise<Property[]> => {
-        const { data, error } = await supabase
-            .from('properties')
-            .select('*');
+        const { data, error } = await supabase.from('properties').select('*');
 
         if (error) {
             console.error('Error fetching properties:', error);
@@ -81,17 +80,12 @@ export const api = {
             baths: Number(p.baths),
             sqft: p.sqft,
             price: Number(p.price),
-            mls: p.mls_number
+            mls: p.mls_number,
         }));
     },
 
     getPropertyById: async (id: string): Promise<Property | undefined> => {
-        const { data, error } = await supabase
-            .from('properties')
-            .select('*')
-            .eq('id', id)
-            .single();
-
+        const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
         if (error) return undefined;
 
         return {
@@ -103,12 +97,23 @@ export const api = {
             baths: Number(data.baths),
             sqft: data.sqft,
             price: Number(data.price),
-            mls: data.mls_number
+            mls: data.mls_number,
         };
     },
 
-    createProperty: async (property: Omit<Property, 'id'>) => {
-        const { data: { user } } = await supabase.auth.getUser();
+    // ✅ UPDATED: accepts optional user_id (so AddPropertyPage can pass it),
+    // but we ALWAYS use the logged-in user id to satisfy RLS safely.
+    createProperty: async (property: Omit<Property, 'id'> & { user_id?: string }) => {
+        const {
+            data: { user },
+            error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) throw userError;
+        if (!user) throw new Error('Not authenticated');
+
+        const ownerId = user.id; // always trust the authenticated user
+
         const { data, error } = await supabase
             .from('properties')
             .insert({
@@ -119,8 +124,12 @@ export const api = {
                 baths: property.baths,
                 sqft: property.sqft,
                 price: property.price,
-                mls_number: property.mls,
-                agent_id: user?.id
+                mls_number: property.mls ?? null,
+
+                // ✅ set both (your schema has both columns)
+                // This satisfies whichever column your RLS policy checks.
+                user_id: ownerId,
+                agent_id: ownerId,
             })
             .select()
             .single();
@@ -129,7 +138,7 @@ export const api = {
 
         return {
             ...property,
-            id: data.id
+            id: data.id,
         } as Property;
     },
 
@@ -144,10 +153,7 @@ export const api = {
         if (property.price) updates.price = property.price;
         if (property.mls) updates.mls_number = property.mls;
 
-        const { error } = await supabase
-            .from('properties')
-            .update(updates)
-            .eq('id', id);
+        const { error } = await supabase.from('properties').update(updates).eq('id', id);
 
         if (error) throw error;
         return api.getPropertyById(id);
@@ -162,13 +168,15 @@ export const api = {
     getOrders: async (): Promise<Order[]> => {
         const { data, error } = await supabase
             .from('orders')
-            .select(`
+            .select(
+                `
                 *,
                 properties (address),
                 profiles:agent_id (full_name),
                 order_services (service_name),
                 assets (*)
-            `)
+            `
+            )
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -181,13 +189,15 @@ export const api = {
     getOrderById: async (id: string): Promise<Order | undefined> => {
         const { data, error } = await supabase
             .from('orders')
-            .select(`
+            .select(
+                `
                 *,
                 properties (address),
                 profiles:agent_id (full_name),
                 order_services (service_name),
                 assets (*)
-            `)
+            `
+            )
             .eq('id', id)
             .single();
 
@@ -196,7 +206,9 @@ export const api = {
     },
 
     createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName'>) => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         // 1. Create Order
         const { data: orderData, error: orderError } = await supabase
@@ -206,7 +218,7 @@ export const api = {
                 status: 'Scheduled',
                 shoot_date: order.shootDate,
                 agent_id: user?.id,
-                payment_status: 'pending'
+                payment_status: 'pending',
             })
             .select()
             .single();
@@ -215,9 +227,9 @@ export const api = {
 
         // 2. Add Services
         if (order.services && order.services.length > 0) {
-            const services = order.services.map(s => ({
+            const services = order.services.map((s) => ({
                 order_id: orderData.id,
-                service_name: s
+                service_name: s,
             }));
             await supabase.from('order_services').insert(services);
         }
@@ -257,7 +269,7 @@ export const api = {
             senderName: m.profiles?.full_name || 'User',
             content: m.content,
             timestamp: m.created_at,
-            isAdmin: false
+            isAdmin: false,
         }));
     },
 
@@ -267,7 +279,7 @@ export const api = {
             type: asset.type,
             name: asset.name,
             url: asset.url,
-            service_id: asset.serviceId
+            service_id: asset.serviceId,
         });
         if (error) throw error;
     },
@@ -275,5 +287,5 @@ export const api = {
     deleteAsset: async (assetId: string) => {
         const { error } = await supabase.from('assets').delete().eq('id', assetId);
         if (error) throw error;
-    }
+    },
 };
