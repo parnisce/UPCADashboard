@@ -16,18 +16,31 @@ export const AdminLoginPage: React.FC = () => {
         setError(null);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
-            if (error) throw error;
+            if (signInError) throw signInError;
 
-            // Optional: Check if user is actually admin
-            // const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-            // if (profile?.role !== 'admin') throw new Error('Unauthorized access');
+            const user = authData.user;
+            if (!user) throw new Error('Login failed.');
 
-            navigate('/admin');
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (profileError) throw profileError;
+
+            const role = profile?.role ?? 'customer';
+
+            if (role === 'admin') {
+                navigate('/admin', { replace: true });
+            } else {
+                navigate('/properties', { replace: true });
+            }
         } catch (err: any) {
             console.error('Login failed:', err);
             setError(err.message || 'Failed to sign in');

@@ -16,14 +16,31 @@ export const CustomerLoginPage: React.FC = () => {
         setError(null);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
-            if (error) throw error;
+            if (signInError) throw signInError;
 
-            navigate('/dashboard');
+            const user = authData.user;
+            if (!user) throw new Error('Login failed.');
+
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (profileError) throw profileError;
+
+            const role = profile?.role ?? 'customer';
+
+            if (role === 'admin') {
+                navigate('/admin', { replace: true });
+            } else {
+                navigate('/properties', { replace: true });
+            }
         } catch (err: any) {
             console.error('Login failed:', err);
             setError(err.message || 'Failed to sign in');

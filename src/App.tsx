@@ -30,6 +30,8 @@ import { AdminOrdersPage } from "./pages/admin/AdminOrdersPage";
 import { AdminMessagesPage } from "./pages/admin/AdminMessagesPage";
 import { AdminOrderDetailPage } from "./pages/admin/AdminOrderDetailPage";
 
+import { RequireAdmin } from "./components/RequireAdmin";
+
 import { UserProvider } from "./contexts/UserContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
@@ -44,14 +46,16 @@ function App() {
 
           <Route path="/admin/login" element={<AdminLoginPage />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="services" element={<AdminServicesPage />} />
-            <Route path="bookings" element={<AdminBookingsPage />} />
-            <Route path="orders" element={<AdminOrdersPage />} />
-            <Route path="orders/:id" element={<AdminOrderDetailPage />} />
-            <Route path="messages" element={<AdminMessagesPage />} />
+          {/* ✅ Admin-only routes */}
+          <Route element={<RequireAdmin />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="services" element={<AdminServicesPage />} />
+              <Route path="bookings" element={<AdminBookingsPage />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="orders/:id" element={<AdminOrderDetailPage />} />
+              <Route path="messages" element={<AdminMessagesPage />} />
+            </Route>
           </Route>
 
           {/* Client Routes */}
