@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, MapPin, Hash, Ruler, Bed, Bath, DollarSign, Upload, Info, X } from 'lucide-react';
 import { api } from '../services/api';
-import { supabase } from '../lib/supabase';
 
 export const AddPropertyPage: React.FC = () => {
     const navigate = useNavigate();
@@ -10,7 +9,6 @@ export const AddPropertyPage: React.FC = () => {
 
     const [thumbnail, setThumbnail] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
     const [formData, setFormData] = useState({
         address: '',
         mls: '',
@@ -26,16 +24,6 @@ export const AddPropertyPage: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            // ✅ Check login (Incognito usually has no session)
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            if (sessionError) throw sessionError;
-
-            if (!session) {
-                alert('Please log in first.');
-                navigate('/login');
-                return;
-            }
-
             await api.createProperty({
                 address: formData.address,
                 mls: formData.mls,
@@ -44,28 +32,31 @@ export const AddPropertyPage: React.FC = () => {
                 baths: Number(formData.baths),
                 price: Number(formData.price),
                 status: formData.status as any,
-
-                // ✅ API maps this to thumbnail_url in DB
                 thumbnail:
                     thumbnail ||
                     'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80',
-
-                // ✅ RLS owner column in your DB schema
-                user_id: session.user.id,
             });
 
             alert('Property added successfully!');
             navigate('/properties');
         } catch (error: any) {
             console.error(error);
-            alert(error?.message || 'Failed to save property.');
+
+            // If not logged in, your api.ts throws "Not authenticated"
+            if (error?.message?.toLowerCase?.().includes('not authenticated')) {
+                alert('Please log in first.');
+                navigate('/login');
+                return;
+            }
+
+            alert(error.message || 'Failed to save property.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,6 +87,7 @@ export const AddPropertyPage: React.FC = () => {
 
                 canvas.width = width;
                 canvas.height = height;
+
                 const ctx = canvas.getContext('2d');
                 ctx?.drawImage(img, 0, 0, width, height);
 
@@ -279,13 +271,7 @@ export const AddPropertyPage: React.FC = () => {
                         {/* Thumbnail Upload */}
                         <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
                             <h2 className="text-xl font-bold text-gray-900">Thumbnail</h2>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                accept="image/*"
-                                className="hidden"
-                            />
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                             <div
                                 onClick={triggerFileInput}
                                 className="aspect-[4/3] border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center gap-4 text-gray-400 hover:border-upca-blue hover:text-upca-blue transition-all cursor-pointer bg-gray-50 overflow-hidden relative group"
