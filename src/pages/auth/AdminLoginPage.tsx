@@ -107,9 +107,6 @@ export const AdminLoginPage: React.FC = () => {
                 </div>
 
                 <div className="mt-8 text-center space-y-4">
-                    <p className="text-slate-500 font-medium">
-                        Need an admin account? <Link to="/admin/register" className="text-indigo-400 font-bold hover:underline">Request Access</Link>
-                    </p>
                     <div className="pt-4 border-t border-slate-800">
                         <Link to="/login" className="text-sm text-slate-600 hover:text-slate-400 font-medium transition-colors">
                             Return to Customer Login

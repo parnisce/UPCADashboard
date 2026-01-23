@@ -10,8 +10,9 @@ export const CustomerRegisterPage: React.FC = () => {
         password: '',
         confirmPassword: '',
         phone: '',
-        company: ''
+        company: '',
     });
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
@@ -26,7 +27,7 @@ export const CustomerRegisterPage: React.FC = () => {
         setError(null);
 
         if (formData.password !== formData.confirmPassword) {
-            setError("Passwords do not match");
+            setError('Passwords do not match');
             setLoading(false);
             return;
         }
@@ -39,21 +40,29 @@ export const CustomerRegisterPage: React.FC = () => {
                     data: {
                         full_name: formData.fullName,
                         phone: formData.phone,
-                        company: formData.company,
-                        role: 'customer'
-                    }
-                }
+
+                        // ✅ matches your DB column name
+                        brokerage_name: formData.company,
+
+                        role: 'customer',
+                    },
+                },
             });
 
             if (signUpError) throw signUpError;
 
-            // Assuming email confirmation is not required or handled by Supabase config
-            // In dev, usually auto-confirm is on.
-            alert("Registration successful! Please sign in.");
+            alert('Registration successful! Please sign in.');
             navigate('/login');
         } catch (err: any) {
             console.error('Registration failed:', err);
-            setError(err.message || 'Failed to create account');
+
+            // Supabase errors sometimes hide the real reason; show what we can.
+            const msg =
+                err?.message ||
+                err?.error_description ||
+                'Failed to create account (check Supabase Auth + DB trigger).';
+
+            setError(msg);
         } finally {
             setLoading(false);
         }
@@ -63,7 +72,9 @@ export const CustomerRegisterPage: React.FC = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
             <div className="max-w-xl w-full">
                 <div className="text-center mb-10">
-                    <h1 className="text-4xl font-black text-upca-blue tracking-tighter mb-2">UPCA<span className="text-upca-teal">.CA</span></h1>
+                    <h1 className="text-4xl font-black text-upca-blue tracking-tighter mb-2">
+                        UPCA<span className="text-upca-teal">.CA</span>
+                    </h1>
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/50 text-blue-700 text-sm font-semibold border border-blue-200">
                         <User className="w-4 h-4" />
                         New Customer Registration
@@ -72,7 +83,9 @@ export const CustomerRegisterPage: React.FC = () => {
 
                 <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl shadow-blue-900/10 border border-white/50">
                     <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Create Account</h2>
-                    <p className="text-gray-500 text-sm text-center mb-8">Join the modern real estate media platform</p>
+                    <p className="text-gray-500 text-sm text-center mb-8">
+                        Join the modern real estate media platform
+                    </p>
 
                     {error && (
                         <div className="mb-6 p-4 bg-red-50/50 backdrop-blur border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm">
@@ -98,6 +111,7 @@ export const CustomerRegisterPage: React.FC = () => {
                                     />
                                 </div>
                             </div>
+
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-gray-700 ml-1">Company / Brokerage</label>
                                 <div className="relative group">
@@ -162,6 +176,7 @@ export const CustomerRegisterPage: React.FC = () => {
                                     />
                                 </div>
                             </div>
+
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-gray-700 ml-1">Confirm Password</label>
                                 <div className="relative group">
@@ -192,7 +207,10 @@ export const CustomerRegisterPage: React.FC = () => {
 
                 <div className="mt-8 text-center">
                     <p className="text-gray-500 font-medium">
-                        Already have an account? <Link to="/login" className="text-upca-blue font-bold hover:underline">Sign In</Link>
+                        Already have an account?{' '}
+                        <Link to="/login" className="text-upca-blue font-bold hover:underline">
+                            Sign In
+                        </Link>
                     </p>
                 </div>
             </div>

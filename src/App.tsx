@@ -9,7 +9,6 @@ import { PropertiesPage } from "./pages/PropertiesPage";
 import { CustomerLoginPage } from "./pages/auth/CustomerLoginPage";
 import { CustomerRegisterPage } from "./pages/auth/CustomerRegisterPage";
 import { AdminLoginPage } from "./pages/auth/AdminLoginPage";
-import { AdminRegisterPage } from "./pages/auth/AdminRegisterPage";
 
 import { CreateOrderPage } from "./pages/CreateOrderPage";
 import { AddPropertyPage } from "./pages/AddPropertyPage";
@@ -44,7 +43,6 @@ function App() {
           <Route path="/register" element={<CustomerRegisterPage />} />
 
           <Route path="/admin/login" element={<AdminLoginPage />} />
-          <Route path="/admin/register" element={<AdminRegisterPage />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
