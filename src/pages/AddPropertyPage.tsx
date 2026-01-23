@@ -2,12 +2,15 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, MapPin, Hash, Ruler, Bed, Bath, DollarSign, Upload, Info, X } from 'lucide-react';
 import { api } from '../services/api';
+import { supabase } from '../lib/supabase';
 
 export const AddPropertyPage: React.FC = () => {
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
     const [thumbnail, setThumbnail] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [formData, setFormData] = useState({
         address: '',
         mls: '',
@@ -15,13 +18,24 @@ export const AddPropertyPage: React.FC = () => {
         beds: '',
         baths: '',
         price: '',
-        status: 'Coming soon' as const
+        status: 'Coming soon' as const,
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
+
         try {
+            // ✅ Check login (Incognito usually has no session)
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError) throw sessionError;
+
+            if (!session) {
+                alert('Please log in first.');
+                navigate('/login');
+                return;
+            }
+
             await api.createProperty({
                 address: formData.address,
                 mls: formData.mls,
@@ -30,13 +44,21 @@ export const AddPropertyPage: React.FC = () => {
                 baths: Number(formData.baths),
                 price: Number(formData.price),
                 status: formData.status as any,
-                thumbnail: thumbnail || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80',
+
+                // ✅ API maps this to thumbnail_url in DB
+                thumbnail:
+                    thumbnail ||
+                    'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80',
+
+                // ✅ RLS owner column in your DB schema
+                user_id: session.user.id,
             });
+
             alert('Property added successfully!');
             navigate('/properties');
         } catch (error: any) {
             console.error(error);
-            alert(error.message || 'Failed to save property.');
+            alert(error?.message || 'Failed to save property.');
         } finally {
             setIsSubmitting(false);
         }
@@ -48,42 +70,44 @@ export const AddPropertyPage: React.FC = () => {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const img = new Image();
-                img.onload = () => {
-                    // Resize to max 800px width/height while maintaining aspect ratio
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const max = 800;
+        if (!file) return;
 
-                    if (width > height) {
-                        if (width > max) {
-                            height *= max / width;
-                            width = max;
-                        }
-                    } else {
-                        if (height > max) {
-                            width *= max / height;
-                            height = max;
-                        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const img = new Image();
+            img.onload = () => {
+                // Resize to max 800px width/height while maintaining aspect ratio
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const max = 800;
+
+                if (width > height) {
+                    if (width > max) {
+                        height *= max / width;
+                        width = max;
                     }
+                } else {
+                    if (height > max) {
+                        width *= max / height;
+                        height = max;
+                    }
+                }
 
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
 
-                    // Compress to JPEG with 0.7 quality
-                    const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    setThumbnail(resizedDataUrl);
-                };
-                img.src = reader.result as string;
+                // Compress to JPEG with 0.7 quality
+                const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                setThumbnail(resizedDataUrl);
             };
-            reader.readAsDataURL(file);
-        }
+
+            img.src = reader.result as string;
+        };
+
+        reader.readAsDataURL(file);
     };
 
     const triggerFileInput = () => {
@@ -155,6 +179,7 @@ export const AddPropertyPage: React.FC = () => {
                                             onChange={handleChange}
                                         />
                                     </div>
+
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                             <Info className="w-4 h-4" /> Listing Status
@@ -204,6 +229,7 @@ export const AddPropertyPage: React.FC = () => {
                                         <Bed className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     </div>
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Baths</label>
                                     <div className="relative">
@@ -217,6 +243,7 @@ export const AddPropertyPage: React.FC = () => {
                                         <Bath className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     </div>
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Sq Ft</label>
                                     <div className="relative">
@@ -230,6 +257,7 @@ export const AddPropertyPage: React.FC = () => {
                                         <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     </div>
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Price ($)</label>
                                     <div className="relative">

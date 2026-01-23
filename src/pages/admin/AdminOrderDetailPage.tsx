@@ -231,11 +231,24 @@ export const AdminOrderDetailPage: React.FC = () => {
                                         {serviceAssets.length > 0 && (
                                             <div className="pl-14 space-y-2">
                                                 {serviceAssets.map(asset => (
-                                                    <div key={asset.id} className="flex items-center justify-between text-sm bg-white p-2 rounded-lg border border-gray-200">
-                                                        <a href={asset.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline">
-                                                            {asset.type === 'link' ? <Globe className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                                                    <div
+                                                        key={asset.id}
+                                                        className="flex items-center justify-between text-sm bg-white p-2 rounded-lg border border-gray-200"
+                                                    >
+                                                        <a
+                                                            href={asset.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 text-blue-600 hover:underline"
+                                                        >
+                                                            {asset.type === "microsite" ? (
+                                                                <Globe className="w-4 h-4" />
+                                                            ) : (
+                                                                <Download className="w-4 h-4" />
+                                                            )}
                                                             {asset.label}
                                                         </a>
+
                                                         <button
                                                             onClick={() => handleRemoveAsset(asset.id)}
                                                             className="text-red-500 hover:text-red-700"
@@ -246,6 +259,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                                                 ))}
                                             </div>
                                         )}
+
 
                                         {/* Upload Action */}
                                         <div className="pl-14">
