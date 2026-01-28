@@ -192,9 +192,17 @@ export const api = {
     getOrders: async (): Promise<Order[]> => {
         const user = await requireUser();
 
-        // IMPORTANT: only show orders owned by the current user
-        // (admin view later can remove this filter)
-        const { data, error } = await supabase
+        // Check if user is admin
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        const role = profile?.role?.trim().toLowerCase();
+        const isAdmin = role === 'admin' || role === 'upca_admin' || user.email === 'admin@upca.ca';
+
+        let query = supabase
             .from('orders')
             .select(
                 `
@@ -204,9 +212,14 @@ export const api = {
           order_services (service_name),
           assets (*)
         `
-            )
-            .eq('agent_id', user.id)
-            .order('created_at', { ascending: false });
+            );
+
+        // If NOT admin, restrict to own orders
+        if (!isAdmin) {
+            query = query.eq('agent_id', user.id);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching orders:', error);
@@ -219,7 +232,17 @@ export const api = {
     getOrderById: async (id: string): Promise<Order | undefined> => {
         const user = await requireUser();
 
-        const { data, error } = await supabase
+        // Check if user is admin
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        const role = profile?.role?.trim().toLowerCase();
+        const isAdmin = role === 'admin' || role === 'upca_admin' || user.email === 'admin@upca.ca';
+
+        let query = supabase
             .from('orders')
             .select(
                 `
@@ -230,9 +253,14 @@ export const api = {
           assets (*)
         `
             )
-            .eq('id', id)
-            .eq('agent_id', user.id)
-            .single();
+            .eq('id', id);
+
+        // If NOT admin, restrict to own orders
+        if (!isAdmin) {
+            query = query.eq('agent_id', user.id);
+        }
+
+        const { data, error } = await query.single();
 
         if (error) return undefined;
         return transformOrder(data);

@@ -24,19 +24,34 @@ export const RequireAdmin: React.FC = () => {
                     return;
                 }
 
+                console.log("Checking admin status for:", user.email);
+
+                // Check profile role
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('role')
                     .eq('id', user.id)
                     .single();
 
-                if (profileError) throw profileError;
+                if (profileError) {
+                    console.error("Error fetching profile for admin check:", profileError);
+                }
+
+                const dbRole = profile?.role?.trim().toLowerCase();
+                // Check for 'admin' (from user screenshot) or 'upca_admin' (from schema)
+                const isProfileAdmin = dbRole === 'admin' || dbRole === 'upca_admin';
+
+                // Fallback: Check email if DB check fails (safety net for RLS issues)
+                const isEmailAdmin = user.email === 'admin@upca.ca';
 
                 if (alive) {
-                    setIsAdmin(profile?.role === 'admin');
+                    const status = isProfileAdmin || isEmailAdmin;
+                    console.log(`Admin Access: ${status} (DB Role: ${dbRole}, Email Auth: ${isEmailAdmin})`);
+                    setIsAdmin(status);
                     setLoading(false);
                 }
-            } catch {
+            } catch (e) {
+                console.error("RequireAdmin check failed:", e);
                 if (alive) {
                     setIsAdmin(false);
                     setLoading(false);

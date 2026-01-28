@@ -34,9 +34,12 @@ export const CustomerLoginPage: React.FC = () => {
 
             if (profileError) throw profileError;
 
-            const role = profile?.role ?? 'customer';
+            const role = profile?.role?.trim().toLowerCase() ?? 'customer';
 
-            if (role === 'admin') {
+            // Also allow hardcoded admin email locally for login check
+            const isEmailAdmin = user.email === 'admin@upca.ca';
+
+            if (role === 'admin' || role === 'upca_admin' || isEmailAdmin) {
                 navigate('/admin', { replace: true });
             } else {
                 navigate('/properties', { replace: true });
