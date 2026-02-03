@@ -51,7 +51,7 @@ export const AdminLayout: React.FC = () => {
                 <div className="h-full flex flex-col">
                     <div className="p-6 border-b border-white/10">
                         <h1 className="text-2xl font-bold text-white tracking-tight">
-                            UPCA<span className="text-upca-teal">.CA</span>
+                            UPCA<span className="text-upca-yellow">.CA</span>
                         </h1>
                         <p className="text-sm text-gray-400 mt-1">Admin Panel</p>
                     </div>
@@ -113,7 +113,7 @@ export const AdminLayout: React.FC = () => {
                             <p className="text-sm font-semibold text-gray-900">Admin User</p>
                             <p className="text-xs text-gray-500">UPCA Administrator</p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-upca-blue to-upca-teal flex items-center justify-center text-white border-2 border-white shadow-lg">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-upca-blue to-upca-yellow flex items-center justify-center text-white border-2 border-white shadow-lg">
                             <User className="w-6 h-6" />
                         </div>
                     </div>

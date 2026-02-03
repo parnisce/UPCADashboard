@@ -8,9 +8,9 @@ export default {
     extend: {
       colors: {
         upca: {
-          blue: '#1e3a8a',
-          teal: '#0d9488',
-          accent: '#2563eb',
+          blue: '#163352', // Dark navy blue from logo
+          yellow: '#f1b21c', // Vibrant yellow from logo
+          accent: '#1e40af',
         },
       },
     },

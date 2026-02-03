@@ -37,7 +37,7 @@ export const LoginPage: React.FC = () => {
             {/* Decorative Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-upca-blue/5 rounded-full blur-[120px]"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-upca-teal/5 rounded-full blur-[120px]"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-upca-yellow/5 rounded-full blur-[120px]"></div>
             </div>
 
             <div className="max-w-[480px] w-full relative z-10">
@@ -45,7 +45,7 @@ export const LoginPage: React.FC = () => {
                     <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-3xl shadow-xl shadow-gray-200/50 mb-6 border border-gray-50 mx-auto">
                         <h1 className="text-3xl font-black tracking-tighter">
                             <span className="text-upca-blue">UP</span>
-                            <span className="text-upca-teal">CA</span>
+                            <span className="text-upca-yellow">CA</span>
                         </h1>
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome Back</h2>

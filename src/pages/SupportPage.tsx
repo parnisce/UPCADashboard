@@ -163,7 +163,7 @@ export const SupportPage: React.FC = () => {
                         {/* Chat Header */}
                         <div className="p-6 bg-gray-900 border-b border-gray-800 flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-upca-blue to-upca-teal flex items-center justify-center">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-upca-blue to-upca-yellow flex items-center justify-center">
                                     <Bot className="w-7 h-7 text-white" />
                                 </div>
                                 <div>
@@ -174,7 +174,7 @@ export const SupportPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            <Sparkles className="w-5 h-5 text-upca-teal" />
+                            <Sparkles className="w-5 h-5 text-upca-yellow" />
                         </div>
 
                         {/* Chat Messages */}

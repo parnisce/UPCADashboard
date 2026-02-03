@@ -165,7 +165,7 @@ export const BillingPage: React.FC = () => {
                 </button>
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-upca-blue/10 rounded-full blur-[100px] -mr-32 -mt-32" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-upca-teal/5 rounded-full blur-[80px] -ml-24 -mb-24" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-upca-yellow/5 rounded-full blur-[80px] -ml-24 -mb-24" />
             </div>
         </div>
     );

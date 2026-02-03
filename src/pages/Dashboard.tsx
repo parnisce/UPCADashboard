@@ -35,10 +35,10 @@ export const Dashboard: React.FC = () => {
     }, [getOrderStatus]);
 
     const stats = [
-        { label: 'Active Orders', value: orders.filter(o => o.status !== 'Delivered' && o.status !== 'Archived').length, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Upcoming Shoots', value: orders.filter(o => o.status === 'Scheduled').length, icon: CalendarIcon, color: 'text-teal-600', bg: 'bg-teal-50' },
-        { label: 'Properties', value: properties.length, icon: Map, color: 'text-purple-600', bg: 'bg-purple-50' },
-        { label: 'Recently Delivered', value: orders.filter(o => o.status === 'Delivered').length, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        { label: 'Active Orders', value: orders.filter(o => o.status !== 'Delivered' && o.status !== 'Archived').length, icon: Clock, color: 'text-upca-blue', bg: 'bg-upca-blue/5' },
+        { label: 'Upcoming Shoots', value: orders.filter(o => o.status === 'Scheduled').length, icon: CalendarIcon, color: 'text-upca-yellow', bg: 'bg-upca-yellow/5' },
+        { label: 'Properties', value: properties.length, icon: Map, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        { label: 'Recently Delivered', value: orders.filter(o => o.status === 'Delivered').length, icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     ];
 
     const activeOrders = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Archived');
@@ -115,8 +115,8 @@ export const Dashboard: React.FC = () => {
                                         <div className="flex items-center gap-4">
                                             <span className={cn(
                                                 "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider",
-                                                order.status === 'Scheduled' ? "bg-blue-100 text-blue-700" :
-                                                    order.status === 'In Progress' ? "bg-amber-100 text-amber-700" : "bg-teal-100 text-teal-700"
+                                                order.status === 'Scheduled' ? "bg-upca-blue/10 text-upca-blue" :
+                                                    order.status === 'In Progress' ? "bg-amber-100 text-amber-700" : "bg-upca-yellow/10 text-upca-yellow"
                                             )}>
                                                 {order.status}
                                             </span>

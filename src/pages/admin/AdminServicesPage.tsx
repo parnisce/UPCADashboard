@@ -130,7 +130,7 @@ export const AdminServicesPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 mb-4 p-4 bg-gradient-to-r from-upca-blue/5 to-upca-teal/5 rounded-xl">
+                                <div className="flex items-center gap-2 mb-4 p-4 bg-gradient-to-r from-upca-blue/5 to-upca-yellow/5 rounded-xl">
                                     <DollarSign className="w-5 h-5 text-upca-blue" />
                                     <span className="text-2xl font-black text-gray-900">${service.basePrice}</span>
                                     <span className="text-sm text-gray-500">base price</span>

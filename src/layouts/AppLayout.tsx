@@ -56,7 +56,7 @@ export const AppLayout: React.FC = () => {
             )}>
                 <div className="h-full flex flex-col">
                     <div className="p-6">
-                        <h1 className="text-2xl font-bold text-upca-blue tracking-tight">UPCA<span className="text-upca-teal">.CA</span></h1>
+                        <h1 className="text-2xl font-bold text-upca-blue tracking-tight">UPCA<span className="text-upca-yellow">.CA</span></h1>
                     </div>
 
                     <nav className="flex-1 px-4 space-y-1">

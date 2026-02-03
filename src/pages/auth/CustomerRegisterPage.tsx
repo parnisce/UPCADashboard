@@ -73,7 +73,7 @@ export const CustomerRegisterPage: React.FC = () => {
             <div className="max-w-xl w-full">
                 <div className="text-center mb-10">
                     <h1 className="text-4xl font-black text-upca-blue tracking-tighter mb-2">
-                        UPCA<span className="text-upca-teal">.CA</span>
+                        UPCA<span className="text-upca-yellow">.CA</span>
                     </h1>
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/50 text-blue-700 text-sm font-semibold border border-blue-200">
                         <User className="w-4 h-4" />

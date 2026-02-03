@@ -93,7 +93,7 @@ export const AdminBookingsPage: React.FC = () => {
                 {sortedDates.length > 0 ? (
                     sortedDates.map((date) => (
                         <div key={date} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="bg-gradient-to-r from-upca-blue to-upca-teal p-4">
+                            <div className="bg-gradient-to-r from-upca-blue to-upca-yellow p-4">
                                 <div className="flex items-center gap-3 text-white">
                                     <CalendarIcon className="w-5 h-5" />
                                     <h3 className="font-bold text-lg">

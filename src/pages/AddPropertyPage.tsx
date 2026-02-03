@@ -304,7 +304,7 @@ export const AddPropertyPage: React.FC = () => {
                         </div>
 
                         {/* Help Text */}
-                        <div className="bg-gradient-to-br from-upca-blue to-upca-teal p-8 rounded-3xl text-white shadow-xl shadow-upca-blue/20">
+                        <div className="bg-gradient-to-br from-upca-blue to-upca-yellow p-8 rounded-3xl text-white shadow-xl shadow-upca-blue/20">
                             <h3 className="font-bold text-lg mb-2">Need help?</h3>
                             <p className="text-white/80 text-sm leading-relaxed">
                                 Don't have all the details yet? You can still add the property and update it later when you're ready to book services.
