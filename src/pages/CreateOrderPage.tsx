@@ -85,7 +85,7 @@ export const CreateOrderPage: React.FC = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20">
+        <div className="max-w-screen-2xl mx-auto space-y-8 pb-20">
             <button
                 onClick={() => navigate(-1)}
                 className="flex items-center gap-2 text-gray-500 hover:text-upca-blue transition-colors font-medium group"

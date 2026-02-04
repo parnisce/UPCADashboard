@@ -87,7 +87,7 @@ export const SupportPage: React.FC = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700 pb-20">
+        <div className="max-w-screen-2xl mx-auto space-y-12 animate-in fade-in duration-700 pb-20">
             <div>
                 <h1 className="text-4xl font-black text-gray-900 tracking-tight">Support & Concierge</h1>
                 <p className="text-gray-500 mt-2 text-lg">We're here to help you dominate your local real estate market.</p>

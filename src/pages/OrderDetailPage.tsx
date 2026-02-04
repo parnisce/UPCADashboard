@@ -106,7 +106,7 @@ export const OrderDetailPage: React.FC = () => {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+        <div className="max-w-screen-2xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-4">
