@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Plus,
     Trash2,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../services/utils';
+import { api } from '../services/api';
 
 interface PaymentMethod {
     id: string;
@@ -24,6 +25,10 @@ export const PaymentMethodsPage: React.FC = () => {
     const navigate = useNavigate();
     const [isAdding, setIsAdding] = useState(false);
     const [methods, setMethods] = useState<PaymentMethod[]>([]);
+
+    useEffect(() => {
+        api.getPaymentMethods().then(setMethods);
+    }, []);
 
     const setDefault = (id: string) => {
         setMethods(methods.map(m => ({ ...m, isDefault: m.id === id })));
@@ -40,7 +45,6 @@ export const PaymentMethodsPage: React.FC = () => {
     const handleAddMethod = async () => {
         setIsAdding(true);
         // Simulate Stripe Connect Flow
-        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // In a real app, this would redirect to Stripe or open Elements
         // For now, we simulate a successful connection
@@ -53,7 +57,8 @@ export const PaymentMethodsPage: React.FC = () => {
             brandColor: 'bg-[#0057b7]'
         };
 
-        setMethods([...methods, newMethod]);
+        await api.addPaymentMethod(newMethod);
+        setMethods(prev => [...prev, newMethod]);
         setIsAdding(false);
     };
 

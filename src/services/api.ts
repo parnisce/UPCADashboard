@@ -2,6 +2,9 @@ import { supabase } from '../lib/supabase';
 import type { Order, Property, User, ServiceType, OrderStatus, Message } from '../types';
 import { defaultServices } from '../stores/servicesStore';
 
+// Mock storage for payment methods (reset on page reload, but good for session)
+let mockPaymentMethods: any[] = [];
+
 const transformOrder = (row: any): Order => ({
     id: row.id,
     propertyId: row.property_id || '',
@@ -327,8 +330,14 @@ export const api = {
     // =========================
     getPaymentMethods: async () => {
         // In a real app, this would fetch saved cards from Stripe via your backend
-        // const { data } = await supabase.from('payment_methods').select('*');
-        return [];
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return mockPaymentMethods;
+    },
+
+    addPaymentMethod: async (method: any) => {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        mockPaymentMethods.push(method);
+        return method;
     },
 
     chargePaymentMethod: async (paymentMethodId: string, amount: number) => {
