@@ -53,37 +53,54 @@ export const CustomerLoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full">
+        <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 relative overflow-hidden">
+            {/* Decorative Background Elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-upca-blue/5 rounded-full blur-[120px]"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-upca-yellow/5 rounded-full blur-[120px]"></div>
+            </div>
+
+            <div className="max-w-[480px] w-full relative z-10">
                 <div className="text-center mb-10">
-                    <h1 className="text-4xl font-black text-upca-blue tracking-tighter mb-2">UPCA<span className="text-upca-yellow">.CA</span></h1>
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/50 text-blue-700 text-sm font-semibold border border-blue-200">
-                        <User className="w-4 h-4" />
-                        Customer Portal
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-3xl shadow-xl shadow-gray-200/50 mb-6 border border-gray-50 mx-auto">
+                        <h1 className="text-3xl font-black tracking-tighter">
+                            <span className="text-upca-blue">UP</span>
+                            <span className="text-upca-yellow">CA</span>
+                        </h1>
                     </div>
+                    <div className="mb-4">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/50 text-blue-700 text-sm font-semibold border border-blue-200">
+                            <User className="w-4 h-4" />
+                            Customer Portal
+                        </div>
+                    </div>
+                    <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome Back</h2>
+                    <p className="text-gray-500 mt-2 font-medium">Modern Real Estate Media Portal</p>
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl shadow-blue-900/10 border border-white/50">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Welcome Back</h2>
-                    <p className="text-gray-500 text-sm text-center mb-8">Sign in to manage your property media</p>
+                <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-gray-200/60 border border-gray-100/50 backdrop-blur-sm">
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold text-gray-900 mb-1 leading-tight">Sign In</h3>
+                        <p className="text-gray-500 text-sm">Access your property media and assets</p>
+                    </div>
 
                     {error && (
-                        <div className="mb-6 p-4 bg-red-50/50 backdrop-blur border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm">
+                        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-sm animate-shake">
                             <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                            {error}
+                            <p className="font-medium">{error}</p>
                         </div>
                     )}
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">Email Address</label>
-                            <div className="relative group">
+                            <label className="text-[13px] font-bold text-gray-700 ml-1 uppercase tracking-wider">Email Address</label>
+                            <div className="group relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-upca-blue transition-colors" />
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-gray-50/50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900 placeholder:text-gray-400"
+                                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 transition-all outline-none border text-gray-900 font-medium"
                                     placeholder="name@brokerage.com"
                                     required
                                 />
@@ -91,45 +108,53 @@ export const CustomerLoginPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">Password</label>
-                            <div className="relative group">
+                            <div className="flex justify-between items-center ml-1">
+                                <label className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Password</label>
+                                <a href="#" className="text-xs font-bold text-upca-blue hover:text-red-600 transition-colors">Forgot password?</a>
+                            </div>
+                            <div className="group relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-upca-blue transition-colors" />
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-gray-50/50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900 placeholder:text-gray-400"
+                                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 transition-all outline-none border text-gray-900 font-medium"
                                     placeholder="••••••••"
                                     required
                                 />
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-sm">
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-upca-blue focus:ring-upca-blue" />
-                                <span className="text-gray-600 font-medium">Remember me</span>
+                        <div className="flex items-center text-sm ml-1">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" className="w-5 h-5 rounded-md border-2 border-gray-200 text-upca-blue focus:ring-upca-blue transition-all cursor-pointer" />
+                                <span className="text-gray-600 font-bold group-hover:text-gray-900 transition-colors">Stay signed in</span>
                             </label>
-                            <a href="#" className="text-upca-blue font-bold hover:underline">Forgot password?</a>
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-upca-blue text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="w-full bg-upca-blue text-white py-4.5 rounded-2xl font-bold text-lg shadow-xl shadow-upca-blue/20 hover:bg-upca-blue/90 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3 group disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Signing In...' : 'Sign In'}
-                            {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                            {loading ? (
+                                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            ) : (
+                                <>
+                                    <span>Sign In to Portal</span>
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
                         </button>
                     </form>
                 </div>
 
-                <div className="mt-8 text-center space-y-4">
-                    <p className="text-gray-500 font-medium">
-                        New to UPCA? <Link to="/register" className="text-upca-blue font-bold hover:underline">Create Account</Link>
+                <div className="mt-10 text-center space-y-6">
+                    <p className="text-gray-500 font-medium whitespace-nowrap">
+                        New to UPCA.CA? <Link to="/register" className="text-upca-blue font-bold hover:text-upca-yellow transition-colors ml-1">Create an account</Link>
                     </p>
-                    <div className="pt-4 border-t border-gray-200/50">
-                        <Link to="/admin/login" className="text-sm text-gray-400 hover:text-gray-600 font-medium transition-colors">
+                    <div className="pt-6 border-t border-gray-200/50">
+                        <Link to="/admin/login" className="text-sm text-gray-400 hover:text-upca-blue font-medium transition-colors">
                             Admin Access
                         </Link>
                     </div>
