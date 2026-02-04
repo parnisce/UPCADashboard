@@ -38,10 +38,20 @@ export const BillingPage: React.FC = () => {
         o.id.toLowerCase().includes(search.toLowerCase())
     );
 
+    const totalSpent = orders.reduce((sum, order) => {
+        if (order.paymentStatus === 'paid') {
+            return sum + (order.totalAmount || 0);
+        }
+        return sum;
+    }, 0);
+
+    const unpaidCount = orders.filter(o => o.paymentStatus === 'pending').length;
+    const paidCount = orders.filter(o => o.paymentStatus === 'paid').length;
+
     const stats = [
-        { label: 'Total Spent', value: '$2,450.00', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Unpaid Invoices', value: '1', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50' },
-        { label: 'Payments Completed', value: '12', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        { label: 'Total Spent', value: `$${totalSpent.toLocaleString()}`, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: 'Unpaid Invoices', value: unpaidCount.toString(), icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50' },
+        { label: 'Payments Completed', value: paidCount.toString(), icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     ];
 
     return (
