@@ -41,7 +41,11 @@ export const AdminDashboard: React.FC = () => {
     const pendingOrders = orders.filter(o => o.status === 'Draft' || o.status === 'Scheduled');
     const inProgressOrders = orders.filter(o => o.status === 'In Progress' || o.status === 'Editing');
     const completedOrders = orders.filter(o => o.status === 'Delivered');
-    const totalRevenue = orders.length * 450; // Mock calculation
+
+    // Calculate real total revenue from paid orders
+    const totalRevenue = orders
+        .filter(o => o.paymentStatus === 'paid')
+        .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
     const stats = [
         {

@@ -1,16 +1,12 @@
 # Stripe Payment Integration - Complete Setup Guide
 
-## ✅ Step 1: Install Supabase CLI
+## ✅ Step 1: Supabase CLI Setup (Windows)
 
-If you haven't already, install the Supabase CLI:
+**Good news**: You don't need to install anything! We'll use `npx` to run Supabase commands directly.
 
+Verify it works by running:
 ```bash
-npm install -g supabase
-```
-
-Verify installation:
-```bash
-supabase --version
+npx supabase --version
 ```
 
 ## 🔐 Step 2: Add Your Stripe Secret Key
@@ -29,12 +25,12 @@ supabase --version
 From your project root directory, run:
 
 ```bash
-supabase functions deploy create-payment-intent
+npx supabase functions deploy create-payment-intent
 ```
 
 If this is your first time deploying, you may need to:
-1. Login: `supabase login`
-2. Link your project: `supabase link --project-ref YOUR_PROJECT_ID`
+1. Login: `npx supabase login`
+2. Link your project: `npx supabase link --project-ref YOUR_PROJECT_ID`
 
 ## 📝 Step 4: Update Your Frontend Code
 
