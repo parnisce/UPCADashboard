@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Check, Calendar, MapPin, Camera, Video, Box, Plane, Globe, ShoppingCart, Plus } from 'lucide-react';
+import { ArrowLeft, Check, Calendar, MapPin, Camera, Video, Box, Plane, Globe, ShoppingCart, Plus, CreditCard, Lock, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Property, ServiceType } from '../types';
 import { cn } from '../services/utils';
@@ -38,6 +38,21 @@ export const CreateOrderPage: React.FC = () => {
     const [notes, setNotes] = useState('');
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+    const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+    const [isLoadingPaymentMethods, setIsLoadingPaymentMethods] = useState(false);
+
+    useEffect(() => {
+        if (step === 4) {
+            setIsLoadingPaymentMethods(true);
+            api.getPaymentMethods().then(methods => {
+                setPaymentMethods(methods);
+                const defaultMethod = methods.find((m: any) => m.isDefault);
+                if (defaultMethod) setSelectedPaymentMethod(defaultMethod.id);
+                setIsLoadingPaymentMethods(false);
+            });
+        }
+    }, [step]);
 
     useEffect(() => {
         api.getProperties().then(setProperties);
@@ -53,23 +68,43 @@ export const CreateOrderPage: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (step < 4) {
+            setStep(step + 1);
+            return;
+        }
+
         const selectedProperty = properties.find(p => p.id === selectedPropertyId);
         if (!selectedProperty) return;
 
+        if (!selectedPaymentMethod) {
+            alert('Please select a payment method');
+            return;
+        }
+
         setIsSubmitting(true);
         try {
+            // 1. Charge Payment
+            const total = calculateTotal();
+            const paymentResult = await api.chargePaymentMethod(selectedPaymentMethod, total);
+
+            if (!paymentResult.success) throw new Error('Payment failed');
+
+            // 2. Create Order
             await api.createOrder({
                 propertyId: selectedPropertyId,
                 propertyAddress: selectedProperty.address,
                 services: selectedServices,
                 shootDate,
-                // notes could be added to type if needed
+                paymentStatus: 'paid'
             });
-            alert('Order created successfully!');
+
+            // Success
+            alert('Payment successful! Order confirmed.');
             navigate('/orders');
         } catch (error) {
             console.error(error);
-            alert('Failed to creates order.');
+            alert('Failed to process order. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -100,7 +135,7 @@ export const CreateOrderPage: React.FC = () => {
                     <p className="text-gray-500 mt-2 text-lg">Book your professional property marketing services.</p>
                 </div>
                 <div className="mt-4 md:mt-0 flex gap-2">
-                    {[1, 2, 3].map((i) => (
+                    {[1, 2, 3, 4].map((i) => (
                         <div
                             key={i}
                             className={cn(
@@ -304,7 +339,118 @@ export const CreateOrderPage: React.FC = () => {
                                 disabled={isSubmitting}
                                 className="flex-1 px-8 py-4 bg-upca-blue text-white rounded-2xl font-bold shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 transition-all disabled:opacity-50"
                             >
-                                {isSubmitting ? 'Confirming...' : 'Confirm Order'}
+                                {isSubmitting ? 'Confirming...' : 'Continue to Payment'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 4: Payment */}
+                {step === 4 && (
+                    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                                <CreditCard className="w-5 h-5" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900">Payment</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Payment Methods */}
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-gray-900">Select Payment Method</h3>
+
+                                {isLoadingPaymentMethods ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <Loader2 className="w-8 h-8 animate-spin text-upca-blue" />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {paymentMethods.map((method) => (
+                                            <button
+                                                key={method.id}
+                                                type="button"
+                                                onClick={() => setSelectedPaymentMethod(method.id)}
+                                                className={cn(
+                                                    "w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left",
+                                                    selectedPaymentMethod === method.id
+                                                        ? "border-upca-blue bg-blue-50/50"
+                                                        : "border-gray-100 hover:border-gray-200 bg-white"
+                                                )}
+                                            >
+                                                <div className={cn("w-12 h-8 rounded flex items-center justify-center text-white font-bold text-[10px] uppercase", method.brandColor)}>
+                                                    {method.type}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="font-bold text-gray-900">•••• {method.last4}</p>
+                                                    <p className="text-xs text-gray-500">Expires {method.expiry}</p>
+                                                </div>
+                                                {selectedPaymentMethod === method.id && (
+                                                    <div className="w-6 h-6 bg-upca-blue rounded-full flex items-center justify-center text-white">
+                                                        <Check className="w-4 h-4" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/billing/payment-methods')}
+                                            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-gray-200 text-gray-500 font-bold hover:border-upca-blue hover:text-upca-blue transition-all"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            Add New Card
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Order Total */}
+                            <div className="bg-gray-50 p-6 rounded-3xl h-fit">
+                                <h3 className="font-bold text-gray-900 mb-4">Total Due Now</h3>
+                                <div className="space-y-3 mb-6">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Subtotal</span>
+                                        <span className="font-bold text-gray-900">${calculateTotal()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Tax (13%)</span>
+                                        <span className="font-bold text-gray-900">${(calculateTotal() * 0.13).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                                        <span className="font-bold text-gray-900 text-lg">Total</span>
+                                        <span className="text-2xl font-black text-upca-blue">${(calculateTotal() * 1.13).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-400 mb-6 bg-white p-3 rounded-xl border border-gray-100">
+                                    <Lock className="w-3 h-3" />
+                                    Payments are secure and encrypted.
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting || !selectedPaymentMethod}
+                                    className="w-full py-4 bg-upca-blue text-white rounded-2xl font-bold shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Pay & Confirm Order
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 flex gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setStep(3)}
+                                className="px-8 py-4 border border-gray-200 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all"
+                            >
+                                Back
                             </button>
                         </div>
                     </div>

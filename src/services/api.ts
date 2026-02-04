@@ -267,7 +267,7 @@ export const api = {
     },
 
     // ✅ SUPER IMPORTANT: agent_id MUST be current logged-in user
-    createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName'>) => {
+    createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName' | 'paymentStatus'> & { paymentStatus?: 'pending' | 'paid' }) => {
         const user = await requireUser();
         const userId = user.id;
 
@@ -279,7 +279,7 @@ export const api = {
                 status: 'Scheduled',
                 shoot_date: order.shootDate,
                 agent_id: userId, // ✅ MUST BE current user
-                payment_status: 'pending',
+                payment_status: order.paymentStatus || 'pending',
             })
             .select()
             .single();
@@ -315,6 +315,24 @@ export const api = {
 
     // Invoices (Mock)
     getInvoices: async () => [],
+
+    // =========================
+    // Payments (Mock)
+    // =========================
+    getPaymentMethods: async () => {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return [
+            { id: 'pm_1', type: 'visa', last4: '4242', expiry: '12/26', isDefault: true, brandColor: 'bg-[#0057b7]' },
+            { id: 'pm_2', type: 'mastercard', last4: '8888', expiry: '08/25', isDefault: false, brandColor: 'bg-[#eb001b]' }
+        ];
+    },
+
+    chargePaymentMethod: async (paymentMethodId: string, amount: number) => {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Mock success
+        return { success: true, transactionId: `txn_${Date.now()}` };
+    },
 
     // =========================
     // Messages
