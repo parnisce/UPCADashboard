@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -18,7 +18,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
-import type { Order, Property, Deliverable } from '../types';
+import type { Order, Property, Deliverable, Message } from '../types';
 import { cn } from '../services/utils';
 import { useOrderStatusStore } from '../stores/servicesStore';
 
@@ -28,6 +28,7 @@ export const OrderDetailPage: React.FC = () => {
     const [order, setOrder] = useState<Order | null>(null);
     const [property, setProperty] = useState<Property | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
 
     const { getOrderStatus } = useOrderStatusStore();
 
@@ -131,7 +132,10 @@ export const OrderDetailPage: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <button className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all flex items-center gap-2">
+                    <button
+                        onClick={() => setIsMessageModalOpen(true)}
+                        className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all flex items-center gap-2"
+                    >
                         <MessageSquare className="w-5 h-5" />
                         Messages
                     </button>
@@ -292,6 +296,115 @@ export const OrderDetailPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Messaging Dialog */}
+            <OrderMessagesModal
+                isOpen={isMessageModalOpen}
+                onClose={() => setIsMessageModalOpen(false)}
+                orderId={order.id}
+                propertyAddress={order.propertyAddress}
+            />
+        </div>
+    );
+};
+
+interface OrderMessagesModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    orderId: string;
+    propertyAddress: string;
+}
+
+const OrderMessagesModal: React.FC<OrderMessagesModalProps> = ({ isOpen, onClose, orderId, propertyAddress }) => {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const fetchMessages = async () => {
+            const data = await api.getMessagesByOrder(orderId);
+            setMessages(data);
+        };
+        fetchMessages();
+        const interval = setInterval(fetchMessages, 5000);
+        return () => clearInterval(interval);
+    }, [isOpen, orderId]);
+
+    useEffect(() => {
+        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const handleSend = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim() || isSending) return;
+        setIsSending(true);
+        try {
+            await api.sendMessage(newMessage, orderId);
+            setNewMessage('');
+            const data = await api.getMessagesByOrder(orderId);
+            setMessages(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col h-[600px] animate-in zoom-in-95 duration-300">
+                <div className="p-6 bg-gray-900 text-white flex items-center justify-between">
+                    <div>
+                        <h3 className="font-bold text-lg">Project Conversation</h3>
+                        <p className="text-xs text-gray-400">{propertyAddress}</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors font-bold">✕</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/50">
+                    {messages.length === 0 && (
+                        <div className="text-center py-10">
+                            <MessageSquare className="w-12 h-12 text-gray-200 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">No messages yet. Start the conversation!</p>
+                        </div>
+                    )}
+                    {messages.map((m) => (
+                        <div key={m.id} className={cn("flex flex-col", m.isAdmin ? "items-start" : "items-end")}>
+                            <div className={cn(
+                                "max-w-[80%] p-4 rounded-2xl text-sm shadow-sm",
+                                m.isAdmin ? "bg-white text-gray-800 rounded-tl-none border border-gray-100" : "bg-upca-blue text-white rounded-tr-none"
+                            )}>
+                                {m.content}
+                            </div>
+                            <span className="text-[10px] text-gray-400 mt-1 px-1">
+                                {m.senderName} • {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </div>
+                    ))}
+                    <div ref={scrollRef} />
+                </div>
+
+                <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100 flex gap-3">
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type a message about this project..."
+                        className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-upca-blue/20 outline-none"
+                    />
+                    <button
+                        type="submit"
+                        disabled={!newMessage.trim() || isSending}
+                        className="px-6 py-3 bg-upca-blue text-white rounded-xl font-bold hover:bg-upca-blue/90 disabled:opacity-50 transition-all flex items-center justify-center min-w-[100px]"
+                    >
+                        {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send'}
+                    </button>
+                </form>
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Search,
     HelpCircle,
@@ -9,9 +9,12 @@ import {
     Send,
     Bot,
     User,
-    Sparkles
+    Sparkles,
+    Loader2
 } from 'lucide-react';
 import { cn } from '../services/utils';
+import { api } from '../services/api';
+import type { Message, User as UserType } from '../types';
 
 interface FAQItem {
     question: string;
@@ -52,12 +55,38 @@ export const SupportPage: React.FC = () => {
     const [activeCategory, setActiveCategory] = useState<'All' | 'Usage' | 'Billing' | 'Refunds'>('All');
     const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
-    // Chatbot State
-    const [messages, setMessages] = useState([
-        { role: 'bot', content: 'Hi! I am your UPCA Assistant, powered by GPT-4. How can I help you with your marketing dashboard today?' }
-    ]);
+    // Messaging State
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+    const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        api.getCurrentUser().then(setCurrentUser);
+    }, []);
+
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const fetchMessages = async () => {
+            try {
+                const data = await api.getMessagesByUser(currentUser.id);
+                setMessages(data);
+                scrollToBottom();
+            } catch (err) {
+                console.error('Error fetching messages:', err);
+            }
+        };
+
+        fetchMessages();
+        const interval = setInterval(fetchMessages, 5000);
+        return () => clearInterval(interval);
+    }, [currentUser]);
 
     const filteredFaqs = FAQS.filter(faq => {
         const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -68,22 +97,25 @@ export const SupportPage: React.FC = () => {
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        if (!input.trim() || !currentUser) return;
 
-        const userMessage = { role: 'user', content: input };
-        setMessages(prev => [...prev, userMessage]);
-        setInput('');
-        setIsTyping(true);
+        setIsSending(true);
+        try {
+            await api.sendMessage(input);
+            setInput('');
+            // Refresh messages
+            const data = await api.getMessagesByUser(currentUser.id);
+            setMessages(data);
+            scrollToBottom();
+        } catch (err) {
+            console.error('Error sending message:', err);
+        } finally {
+            setIsSending(false);
+        }
+    };
 
-        // Simulated GPT Response (Integration bridge)
-        setTimeout(() => {
-            const botResponse = {
-                role: 'bot',
-                content: "I've analyzed your request. You can manage that directly in your Billing settings or by contacting our 24/7 concierge. Would you like me to guide you there?"
-            };
-            setMessages(prev => [...prev, botResponse]);
-            setIsTyping(false);
-        }, 1500);
+    const formatTime = (timestamp: string) => {
+        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     return (
@@ -157,7 +189,7 @@ export const SupportPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Right Column: AI Chatbot */}
+                {/* Right Column: Concierge Chat */}
                 <div className="space-y-6">
                     <div className="bg-white rounded-[40px] border border-gray-100 shadow-xl overflow-hidden flex flex-col h-[700px]">
                         {/* Chat Header */}
@@ -167,10 +199,10 @@ export const SupportPage: React.FC = () => {
                                     <Bot className="w-7 h-7 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-white font-bold">UPCA AI Assistant</h3>
+                                    <h3 className="text-white font-bold">UPCA Concierge</h3>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">GPT-4 Active</span>
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Online & Responsive</span>
                                     </div>
                                 </div>
                             </div>
@@ -179,37 +211,42 @@ export const SupportPage: React.FC = () => {
 
                         {/* Chat Messages */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
+                            {messages.length === 0 && (
+                                <div className="text-center py-10 px-6">
+                                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-100">
+                                        <Bot className="w-8 h-8 text-upca-blue/30" />
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-900">Start a conversation</p>
+                                    <p className="text-xs text-gray-500 mt-1">Our team typically replies in under 15 minutes during business hours.</p>
+                                </div>
+                            )}
                             {messages.map((msg, i) => (
                                 <div key={i} className={cn(
-                                    "flex items-start gap-3 max-w-[85%]",
-                                    msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
+                                    "flex flex-col gap-1 max-w-[85%]",
+                                    msg.isAdmin ? "mr-auto" : "ml-auto items-end"
                                 )}>
                                     <div className={cn(
-                                        "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                                        msg.role === 'bot' ? "bg-upca-blue/10 text-upca-blue" : "bg-gray-200 text-gray-500"
+                                        "flex items-center gap-2 mb-1",
+                                        msg.isAdmin ? "flex-row" : "flex-row-reverse"
                                     )}>
-                                        {msg.role === 'bot' ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                                        <div className={cn(
+                                            "w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 text-[10px] font-bold",
+                                            msg.isAdmin ? "bg-upca-blue/10 text-upca-blue" : "bg-gray-200 text-gray-500"
+                                        )}>
+                                            {msg.isAdmin ? <Bot className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">{msg.senderName}</span>
                                     </div>
                                     <div className={cn(
-                                        "p-4 rounded-[24px] text-sm leading-relaxed",
-                                        msg.role === 'bot' ? "bg-white text-gray-700 shadow-sm border border-gray-100" : "bg-upca-blue text-white font-medium"
+                                        "p-4 rounded-[24px] text-sm leading-relaxed shadow-sm",
+                                        msg.isAdmin ? "bg-white text-gray-700 border border-gray-100 rounded-tl-none" : "bg-upca-blue text-white font-medium rounded-tr-none"
                                     )}>
                                         {msg.content}
                                     </div>
+                                    <span className="text-[9px] text-gray-400 font-medium px-2">{formatTime(msg.timestamp)}</span>
                                 </div>
                             ))}
-                            {isTyping && (
-                                <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-upca-blue/10 text-upca-blue flex items-center justify-center">
-                                        <Bot className="w-5 h-5" />
-                                    </div>
-                                    <div className="bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 flex gap-1">
-                                        <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" />
-                                        <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                        <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                    </div>
-                                </div>
-                            )}
+                            <div ref={messagesEndRef} />
                         </div>
 
                         {/* Chat Input */}
@@ -221,15 +258,17 @@ export const SupportPage: React.FC = () => {
                                     className="w-full pl-6 pr-14 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
+                                    disabled={isSending}
                                 />
                                 <button
                                     type="submit"
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-upca-blue text-white rounded-xl flex items-center justify-center hover:bg-upca-blue/90 transition-all shadow-md shadow-upca-blue/10"
+                                    disabled={!input.trim() || isSending}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-upca-blue text-white rounded-xl flex items-center justify-center hover:bg-upca-blue/90 transition-all shadow-md shadow-upca-blue/10 disabled:opacity-50"
                                 >
-                                    <Send className="w-5 h-5" />
+                                    {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                                 </button>
                             </div>
-                            <p className="text-[10px] text-center text-gray-400 mt-3 font-medium uppercase tracking-widest">Powered by OpenAI ChatGPT API</p>
+                            <p className="text-[10px] text-center text-gray-400 mt-3 font-medium uppercase tracking-widest leading-tight">Your Direct Line to UPCA Management</p>
                         </form>
                     </div>
                 </div>

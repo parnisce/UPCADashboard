@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { Order, Property, User, ServiceType, OrderStatus } from '../types';
+import type { Order, Property, User, ServiceType, OrderStatus, Message } from '../types';
 
 const transformOrder = (row: any): Order => ({
     id: row.id,
@@ -319,10 +319,10 @@ export const api = {
     // =========================
     // Messages
     // =========================
-    getMessagesByOrder: async (orderId: string) => {
+    getMessagesByOrder: async (orderId: string): Promise<Message[]> => {
         const { data, error } = await supabase
             .from('messages')
-            .select('*, profiles:sender_id(full_name)')
+            .select('*, profiles:sender_id(full_name, role)')
             .eq('order_id', orderId)
             .order('created_at', { ascending: true });
 
@@ -335,7 +335,78 @@ export const api = {
             senderName: m.profiles?.full_name || 'User',
             content: m.content,
             timestamp: m.created_at,
-            isAdmin: false,
+            isAdmin: m.profiles?.role === 'admin' || m.profiles?.role === 'upca_admin',
+        }));
+    },
+
+    sendMessage: async (content: string, orderId?: string) => {
+        const user = await requireUser();
+        const { data, error } = await supabase
+            .from('messages')
+            .insert({
+                order_id: orderId,
+                sender_id: user.id,
+                content: content,
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    getAllConversations: async () => {
+        const { data, error } = await supabase
+            .from('messages')
+            .select(`
+                *,
+                profiles:sender_id (id, full_name, role, brokerage_name, avatar_url)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Group by user/order to create unique conversations
+        const conversations: any[] = [];
+        const seen = new Set();
+
+        data?.forEach((m: any) => {
+            const key = `${m.sender_id}-${m.order_id || 'general'}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                conversations.push({
+                    userId: m.sender_id,
+                    userName: m.profiles?.full_name || 'User',
+                    userRole: m.profiles?.role,
+                    lastMessage: m.content,
+                    lastMessageTime: m.created_at,
+                    orderId: m.order_id,
+                    avatar: m.profiles?.avatar_url,
+                });
+            }
+        });
+
+        return conversations;
+    },
+
+    getMessagesByUser: async (userId: string, orderId?: string): Promise<Message[]> => {
+        let query = supabase
+            .from('messages')
+            .select('*, profiles:sender_id(full_name, role)')
+            .or(`sender_id.eq.${userId},order_id.eq.${orderId || ''}`)
+            .order('created_at', { ascending: true });
+
+        const { data, error } = await query;
+        if (error) return [];
+
+        return (data ?? []).map((m: any) => ({
+            id: m.id,
+            orderId: m.order_id,
+            senderId: m.sender_id,
+            senderName: m.profiles?.full_name || 'User',
+            content: m.content,
+            timestamp: m.created_at,
+            isAdmin: m.profiles?.role === 'admin' || m.profiles?.role === 'upca_admin',
         }));
     },
 

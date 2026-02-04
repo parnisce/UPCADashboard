@@ -1,128 +1,82 @@
-import { useState } from 'react';
-import { Send, Search, MessageSquare, CheckCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Send, Search, MessageSquare, CheckCheck, Loader2 } from 'lucide-react';
 import type { Message } from '../../types';
+import { api } from '../../services/api';
 
 interface Conversation {
     userId: string;
     userName: string;
-    userEmail: string;
+    userEmail?: string;
     lastMessage: string;
     lastMessageTime: string;
     unreadCount: number;
     orderId?: string;
+    avatar?: string;
 }
 
 export const AdminMessagesPage: React.FC = () => {
-    const [conversations, setConversations] = useState<Conversation[]>([
-        {
-            userId: '1',
-            userName: 'Sarah Johnson',
-            userEmail: 'sarah.johnson@remax.com',
-            lastMessage: 'When will the photos be ready?',
-            lastMessageTime: '2026-01-21T10:30:00',
-            unreadCount: 2,
-            orderId: 'ORD-001'
-        },
-        {
-            userId: '2',
-            userName: 'Michael Chen',
-            userEmail: 'mchen@coldwellbanker.com',
-            lastMessage: 'Thanks for the quick turnaround!',
-            lastMessageTime: '2026-01-21T09:15:00',
-            unreadCount: 0,
-            orderId: 'ORD-003'
-        },
-        {
-            userId: '3',
-            userName: 'Emily Rodriguez',
-            userEmail: 'emily.r@century21.com',
-            lastMessage: 'Can we reschedule the shoot?',
-            lastMessageTime: '2026-01-20T16:45:00',
-            unreadCount: 1,
-            orderId: 'ORD-005'
-        }
-    ]);
-
-    const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(conversations[0]);
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            orderId: 'ORD-001',
-            senderId: '1',
-            senderName: 'Sarah Johnson',
-            content: 'Hi, I just placed an order for photography at 123 Main Street. When can we schedule the shoot?',
-            timestamp: '2026-01-21T09:00:00',
-            isAdmin: false
-        },
-        {
-            id: '2',
-            orderId: 'ORD-001',
-            senderId: 'admin',
-            senderName: 'UPCA Admin',
-            content: 'Hello Sarah! Thank you for your order. We have availability this Thursday or Friday. Which works better for you?',
-            timestamp: '2026-01-21T09:15:00',
-            isAdmin: true
-        },
-        {
-            id: '3',
-            orderId: 'ORD-001',
-            senderId: '1',
-            senderName: 'Sarah Johnson',
-            content: 'Thursday at 10 AM would be perfect!',
-            timestamp: '2026-01-21T09:30:00',
-            isAdmin: false
-        },
-        {
-            id: '4',
-            orderId: 'ORD-001',
-            senderId: 'admin',
-            senderName: 'UPCA Admin',
-            content: 'Great! I\'ve scheduled your shoot for Thursday, January 23rd at 10:00 AM. Our photographer will arrive 5-10 minutes early.',
-            timestamp: '2026-01-21T09:35:00',
-            isAdmin: true
-        },
-        {
-            id: '5',
-            orderId: 'ORD-001',
-            senderId: '1',
-            senderName: 'Sarah Johnson',
-            content: 'When will the photos be ready?',
-            timestamp: '2026-01-21T10:30:00',
-            isAdmin: false
-        }
-    ]);
-
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [loading, setLoading] = useState(true);
     const [newMessage, setNewMessage] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
 
+    useEffect(() => {
+        const fetchConversations = async () => {
+            try {
+                const data = await api.getAllConversations();
+                setConversations(data.filter(c => c.userRole !== 'admin' && c.userRole !== 'upca_admin'));
+                if (!selectedConversation && data.length > 0) {
+                    // Find first non-admin conversation
+                    const first = data.find(c => c.userRole !== 'admin' && c.userRole !== 'upca_admin');
+                    if (first) setSelectedConversation(first);
+                }
+            } catch (err) {
+                console.error('Error fetching conversations:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchConversations();
+        const interval = setInterval(fetchConversations, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!selectedConversation) return;
+            try {
+                const data = await api.getMessagesByUser(selectedConversation.userId, selectedConversation.orderId);
+                setMessages(data);
+            } catch (err) {
+                console.error('Error fetching messages:', err);
+            }
+        };
+
+        fetchMessages();
+        const interval = setInterval(fetchMessages, 5000);
+        return () => clearInterval(interval);
+    }, [selectedConversation]);
+
     const filteredConversations = conversations.filter(conv =>
         conv.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        conv.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
         conv.orderId?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         if (!newMessage.trim() || !selectedConversation) return;
 
-        const message: Message = {
-            id: Date.now().toString(),
-            orderId: selectedConversation.orderId,
-            senderId: 'admin',
-            senderName: 'UPCA Admin',
-            content: newMessage,
-            timestamp: new Date().toISOString(),
-            isAdmin: true
-        };
-
-        setMessages([...messages, message]);
-        setNewMessage('');
-
-        // Update conversation last message
-        setConversations(conversations.map(conv =>
-            conv.userId === selectedConversation.userId
-                ? { ...conv, lastMessage: newMessage, lastMessageTime: new Date().toISOString() }
-                : conv
-        ));
+        try {
+            await api.sendMessage(newMessage, selectedConversation.orderId);
+            setNewMessage('');
+            // Refresh messages immediately
+            const data = await api.getMessagesByUser(selectedConversation.userId, selectedConversation.orderId);
+            setMessages(data);
+        } catch (err) {
+            console.error('Error sending message:', err);
+        }
     };
 
     const formatTime = (timestamp: string) => {
@@ -136,6 +90,14 @@ export const AdminMessagesPage: React.FC = () => {
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
     };
+
+    if (loading && conversations.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-8 h-8 animate-spin text-upca-blue" />
+            </div>
+        );
+    }
 
     return (
         <div className="h-[calc(100vh-12rem)] animate-in fade-in duration-500">
@@ -161,18 +123,18 @@ export const AdminMessagesPage: React.FC = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto">
-                        {filteredConversations.map((conv) => (
+                        {filteredConversations.length > 0 ? filteredConversations.map((conv) => (
                             <div
-                                key={conv.userId}
+                                key={`${conv.userId}-${conv.orderId || 'general'}`}
                                 onClick={() => setSelectedConversation(conv)}
-                                className={`p-4 border-b border-gray-50 cursor-pointer transition-colors ${selectedConversation?.userId === conv.userId
+                                className={`p-4 border-b border-gray-50 cursor-pointer transition-colors ${selectedConversation?.userId === conv.userId && selectedConversation?.orderId === conv.orderId
                                     ? 'bg-upca-blue/5 border-l-4 border-l-upca-blue'
                                     : 'hover:bg-gray-50'
                                     }`}
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-upca-blue/10 flex items-center justify-center text-upca-blue font-bold flex-shrink-0">
-                                        {conv.userName.charAt(0)}
+                                    <div className="w-10 h-10 rounded-full bg-upca-blue/10 overflow-hidden flex items-center justify-center text-upca-blue font-bold flex-shrink-0">
+                                        {conv.avatar ? <img src={conv.avatar} alt="" className="w-full h-full object-cover" /> : conv.userName.charAt(0)}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">
@@ -186,31 +148,28 @@ export const AdminMessagesPage: React.FC = () => {
                                                     {conv.orderId}
                                                 </span>
                                             )}
-                                            {conv.unreadCount > 0 && (
-                                                <span className="text-xs bg-upca-blue text-white px-2 py-0.5 rounded-full font-bold">
-                                                    {conv.unreadCount}
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="p-8 text-center text-gray-500 text-sm">No conversations found.</div>
+                        )}
                     </div>
                 </div>
 
                 {/* Chat Area */}
                 {selectedConversation ? (
-                    <div className="flex-1 flex flex-col">
+                    <div className="flex-1 flex flex-col bg-gray-50/30">
                         {/* Chat Header */}
-                        <div className="p-4 border-b border-gray-100 bg-gray-50">
+                        <div className="p-4 border-b border-gray-100 bg-white shadow-sm">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-upca-blue/10 flex items-center justify-center text-upca-blue font-bold">
-                                    {selectedConversation.userName.charAt(0)}
+                                <div className="w-10 h-10 rounded-full bg-upca-blue/10 overflow-hidden flex items-center justify-center text-upca-blue font-bold">
+                                    {selectedConversation.avatar ? <img src={selectedConversation.avatar} alt="" className="w-full h-full object-cover" /> : selectedConversation.userName.charAt(0)}
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-900">{selectedConversation.userName}</p>
-                                    <p className="text-sm text-gray-500">{selectedConversation.userEmail}</p>
+                                    <p className="text-sm text-gray-500">{selectedConversation.userEmail || 'Active Client'}</p>
                                 </div>
                                 {selectedConversation.orderId && (
                                     <span className="ml-auto text-sm bg-white text-gray-600 px-3 py-1 rounded-full font-mono border border-gray-200">
@@ -228,17 +187,20 @@ export const AdminMessagesPage: React.FC = () => {
                                     className={`flex ${message.isAdmin ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div className={`max-w-md ${message.isAdmin ? 'order-2' : 'order-1'}`}>
+                                        {!message.isAdmin && (
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1">{message.senderName}</p>
+                                        )}
                                         <div
-                                            className={`rounded-2xl px-4 py-3 ${message.isAdmin
-                                                ? 'bg-upca-blue text-white rounded-br-sm'
-                                                : 'bg-gray-100 text-gray-900 rounded-bl-sm'
+                                            className={`rounded-2xl px-4 py-3 shadow-sm ${message.isAdmin
+                                                ? 'bg-upca-blue text-white rounded-br-none'
+                                                : 'bg-white text-gray-900 border border-gray-100 rounded-bl-none'
                                                 }`}
                                         >
-                                            <p className="text-sm">{message.content}</p>
+                                            <p className="text-sm leading-relaxed">{message.content}</p>
                                         </div>
                                         <div className={`flex items-center gap-2 mt-1 px-2 ${message.isAdmin ? 'justify-end' : 'justify-start'}`}>
-                                            <span className="text-xs text-gray-500">{formatTime(message.timestamp)}</span>
-                                            {message.isAdmin && <CheckCheck className="w-3 h-3 text-gray-400" />}
+                                            <span className="text-[10px] text-gray-400 font-medium">{formatTime(message.timestamp)}</span>
+                                            {message.isAdmin && <CheckCheck className="w-3 h-3 text-upca-blue" />}
                                         </div>
                                     </div>
                                 </div>
@@ -246,7 +208,7 @@ export const AdminMessagesPage: React.FC = () => {
                         </div>
 
                         {/* Message Input */}
-                        <div className="p-4 border-t border-gray-100 bg-gray-50">
+                        <div className="p-4 bg-white border-t border-gray-100">
                             <div className="flex gap-3">
                                 <input
                                     type="text"
@@ -254,12 +216,12 @@ export const AdminMessagesPage: React.FC = () => {
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 outline-none transition-all"
                                 />
                                 <button
                                     onClick={handleSendMessage}
                                     disabled={!newMessage.trim()}
-                                    className="px-6 py-3 bg-upca-blue text-white rounded-xl font-semibold hover:bg-upca-blue/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                    className="px-6 py-3 bg-upca-blue text-white rounded-xl font-bold hover:bg-upca-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-upca-blue/20"
                                 >
                                     <Send className="w-4 h-4" />
                                     Send
@@ -268,10 +230,13 @@ export const AdminMessagesPage: React.FC = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center text-gray-500">
+                    <div className="flex-1 flex items-center justify-center text-gray-500 bg-gray-50/30">
                         <div className="text-center">
-                            <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                            <p className="font-medium">Select a conversation to start messaging</p>
+                            <div className="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center mx-auto mb-4 text-gray-200 border border-gray-50">
+                                <MessageSquare className="w-10 h-10" />
+                            </div>
+                            <p className="font-bold text-gray-900">Select a conversation</p>
+                            <p className="text-sm text-gray-500 mt-1">Communicate with your clients in real-time</p>
                         </div>
                     </div>
                 )}
