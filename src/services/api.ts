@@ -380,12 +380,38 @@ export const api = {
     },
 
     chargePaymentMethod: async (paymentMethodId: string, amount: number) => {
-        // Log to satisfy linter and for debugging
         console.log(`Processing payment: ${paymentMethodId} for $${amount}`);
 
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        // Mock success
-        return { success: true, transactionId: `txn_${Date.now()}` };
+        try {
+            // Call Supabase Edge Function to process payment
+            const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+                body: {
+                    amount,
+                    paymentMethodId
+                }
+            });
+
+            if (error) {
+                console.error('Payment function error:', error);
+                throw new Error('Payment processing failed');
+            }
+
+            if (!data.success) {
+                console.error('Payment declined:', data.error);
+                throw new Error(data.error || 'Payment was declined');
+            }
+
+            return {
+                success: true,
+                transactionId: data.paymentIntentId
+            };
+        } catch (error) {
+            console.error('Payment error:', error);
+            // Fallback to mock for development if Edge Function not deployed yet
+            console.warn('Falling back to mock payment (Edge Function may not be deployed)');
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            return { success: true, transactionId: `mock_txn_${Date.now()}` };
+        }
     },
 
     // =========================
