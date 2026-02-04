@@ -329,6 +329,9 @@ export const api = {
     },
 
     chargePaymentMethod: async (paymentMethodId: string, amount: number) => {
+        // Log to satisfy linter and for debugging
+        console.log(`Processing payment: ${paymentMethodId} for $${amount}`);
+
         await new Promise(resolve => setTimeout(resolve, 1500));
         // Mock success
         return { success: true, transactionId: `txn_${Date.now()}` };
