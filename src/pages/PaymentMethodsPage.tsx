@@ -9,8 +9,10 @@ import {
     Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { cn } from '../services/utils';
 import { api } from '../services/api';
+import { stripePromise } from '../lib/stripe';
 
 interface PaymentMethod {
     id: string;
@@ -20,6 +22,95 @@ interface PaymentMethod {
     isDefault: boolean;
     brandColor: string;
 }
+
+const AddCardForm = ({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) => {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!stripe || !elements) return;
+
+        setIsProcessing(true);
+        setError('');
+
+        try {
+            const cardElement = elements.getElement(CardElement);
+            if (!cardElement) return;
+
+            // Create Payment Method
+            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+            });
+
+            if (error) {
+                console.error(error);
+                setError(error.message || 'Failed to link card.');
+                setIsProcessing(false);
+                return;
+            }
+
+            if (paymentMethod) {
+                // Save to Backend
+                const newMethod = {
+                    id: paymentMethod.id, // Real Stripe PM ID
+                    type: paymentMethod.card?.brand,
+                    last4: paymentMethod.card?.last4,
+                    expiry: `${paymentMethod.card?.exp_month}/${paymentMethod.card?.exp_year.toString().slice(-2)}`,
+                    isDefault: false,
+                    brandColor: paymentMethod.card?.brand === 'visa' ? 'bg-[#0057b7]' : 'bg-[#eb001b]'
+                };
+
+                await api.addPaymentMethod(newMethod);
+                onSuccess();
+            }
+        } catch (err) {
+            console.error(err);
+            setError('An unexpected error occurred.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="p-6 bg-white rounded-3xl border border-gray-100 shadow-xl space-y-4">
+            <h3 className="font-bold text-gray-900 text-lg">Enter Card Details</h3>
+            <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 focus-within:bg-white focus-within:ring-2 ring-upca-blue/20 transition-all">
+                <CardElement options={{
+                    style: {
+                        base: {
+                            fontSize: '16px',
+                            color: '#424770',
+                            '::placeholder': { color: '#aab7c4' },
+                        },
+                        invalid: { color: '#9e2146' },
+                    },
+                }} />
+            </div>
+            {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
+            <div className="flex gap-2">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-all"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    disabled={!stripe || isProcessing}
+                    className="flex-1 py-3 bg-upca-blue text-white rounded-xl font-bold hover:bg-upca-blue/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                    {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Link Card'}
+                </button>
+            </div>
+        </form>
+    );
+};
 
 export const PaymentMethodsPage: React.FC = () => {
     const navigate = useNavigate();
@@ -42,23 +133,8 @@ export const PaymentMethodsPage: React.FC = () => {
         setMethods(methods.filter(m => m.id !== id));
     };
 
-    const handleAddMethod = async () => {
-        setIsAdding(true);
-        // Simulate Stripe Connect Flow
-
-        // In a real app, this would redirect to Stripe or open Elements
-        // For now, we simulate a successful connection
-        const newMethod: PaymentMethod = {
-            id: `pm_${Date.now()}`,
-            type: 'visa',
-            last4: '4242',
-            expiry: '12/28',
-            isDefault: methods.length === 0,
-            brandColor: 'bg-[#0057b7]'
-        };
-
-        await api.addPaymentMethod(newMethod);
-        setMethods(prev => [...prev, newMethod]);
+    const handleSuccess = () => {
+        api.getPaymentMethods().then(setMethods); // Refresh list
         setIsAdding(false);
     };
 
@@ -134,24 +210,25 @@ export const PaymentMethodsPage: React.FC = () => {
                     </div>
                 ))}
 
-                {/* Add New Card Button Card */}
-                <button
-                    onClick={handleAddMethod}
-                    disabled={isAdding}
-                    className="rounded-[32px] border-2 border-dashed border-gray-200 p-8 flex flex-col items-center justify-center gap-4 hover:border-upca-blue/30 hover:bg-upca-blue/5 transition-all group min-h-[240px] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <div className="w-16 h-16 rounded-3xl bg-gray-50 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-upca-blue/10">
-                        {isAdding ? (
-                            <Loader2 className="w-8 h-8 text-upca-blue animate-spin" />
-                        ) : (
+                {/* Add New Card Button Card OR Form */}
+                {isAdding ? (
+                    <Elements stripe={stripePromise}>
+                        <AddCardForm onSuccess={handleSuccess} onCancel={() => setIsAdding(false)} />
+                    </Elements>
+                ) : (
+                    <button
+                        onClick={() => setIsAdding(true)}
+                        className="rounded-[32px] border-2 border-dashed border-gray-200 p-8 flex flex-col items-center justify-center gap-4 hover:border-upca-blue/30 hover:bg-upca-blue/5 transition-all group min-h-[240px]"
+                    >
+                        <div className="w-16 h-16 rounded-3xl bg-gray-50 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-upca-blue/10">
                             <Plus className="w-8 h-8 text-gray-400 group-hover:text-upca-blue" />
-                        )}
-                    </div>
-                    <div className="text-center">
-                        <h3 className="font-bold text-gray-900 text-lg mb-1">{isAdding ? 'Connecting to Stripe...' : 'Link a Payment Method'}</h3>
-                        <p className="text-sm text-gray-400">Connect securely via Stripe to pay for orders.</p>
-                    </div>
-                </button>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="font-bold text-gray-900 text-lg mb-1">Link a Payment Method</h3>
+                            <p className="text-sm text-gray-400">Connect securely via Stripe to pay for orders.</p>
+                        </div>
+                    </button>
+                )}
             </div>
 
             {/* Security Footer */}
