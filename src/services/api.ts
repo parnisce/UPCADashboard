@@ -339,13 +339,14 @@ export const api = {
         }));
     },
 
-    sendMessage: async (content: string, orderId?: string) => {
+    sendMessage: async (content: string, orderId?: string, recipientId?: string) => {
         const user = await requireUser();
         const { data, error } = await supabase
             .from('messages')
             .insert({
-                order_id: orderId,
+                order_id: orderId || null,
                 sender_id: user.id,
+                recipient_id: recipientId || null,
                 content: content,
             })
             .select()
@@ -392,12 +393,21 @@ export const api = {
     getMessagesByUser: async (userId: string, orderId?: string): Promise<Message[]> => {
         let query = supabase
             .from('messages')
-            .select('*, profiles:sender_id(full_name, role)')
-            .or(`sender_id.eq.${userId},order_id.eq.${orderId || ''}`)
-            .order('created_at', { ascending: true });
+            .select('*, profiles:sender_id(full_name, role)');
 
-        const { data, error } = await query;
-        if (error) return [];
+        if (orderId) {
+            query = query.eq('order_id', orderId);
+        } else {
+            // General chat: show messages sent by the user OR received by the user
+            query = query.or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).is('order_id', null);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching messages:', error);
+            return [];
+        }
 
         return (data ?? []).map((m: any) => ({
             id: m.id,

@@ -69,7 +69,7 @@ export const AdminMessagesPage: React.FC = () => {
         if (!newMessage.trim() || !selectedConversation) return;
 
         try {
-            await api.sendMessage(newMessage, selectedConversation.orderId);
+            await api.sendMessage(newMessage, selectedConversation.orderId, selectedConversation.userId);
             setNewMessage('');
             // Refresh messages immediately
             const data = await api.getMessagesByUser(selectedConversation.userId, selectedConversation.orderId);
