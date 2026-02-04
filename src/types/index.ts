@@ -41,6 +41,7 @@ export interface Order {
     agentName: string;
     createdAt: string;
     paymentStatus?: 'pending' | 'confirmed' | 'paid';
+    totalAmount?: number;
     deliverables?: Deliverable[];
 }
 

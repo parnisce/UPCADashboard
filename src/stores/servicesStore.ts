@@ -20,7 +20,7 @@ interface ServicesStore {
 }
 
 // Default services
-const defaultServices: ServicePricing[] = [
+export const defaultServices: ServicePricing[] = [
     {
         id: 'Real Estate Photography',
         name: 'Real Estate Photography',

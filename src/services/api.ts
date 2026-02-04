@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Order, Property, User, ServiceType, OrderStatus, Message } from '../types';
+import { defaultServices } from '../stores/servicesStore';
 
 const transformOrder = (row: any): Order => ({
     id: row.id,
@@ -11,6 +12,7 @@ const transformOrder = (row: any): Order => ({
     shootDate: row.shoot_date,
     agentName: row.profiles?.full_name || 'Unknown Agent',
     createdAt: row.created_at,
+    totalAmount: row.order_services?.reduce((sum: number, s: any) => sum + (s.price || 0), 0) || 0,
     deliverables:
         row.assets?.map((a: any) => ({
             id: a.id,
@@ -208,8 +210,8 @@ export const api = {
                 `
           *,
           properties (address),
-          profiles:agent_id (full_name),
-          order_services (service_name),
+           profiles:agent_id (full_name),
+           order_services (service_name, price),
           assets (*)
         `
             );
@@ -248,8 +250,8 @@ export const api = {
                 `
           *,
           properties (address),
-          profiles:agent_id (full_name),
-          order_services (service_name),
+           profiles:agent_id (full_name),
+           order_services (service_name, price),
           assets (*)
         `
             )
@@ -288,10 +290,14 @@ export const api = {
 
         // 2) Add Services
         if (order.services && order.services.length > 0) {
-            const services = order.services.map((s) => ({
-                order_id: orderData.id,
-                service_name: s,
-            }));
+            const services = order.services.map((s) => {
+                const price = defaultServices.find(ds => ds.id === s)?.basePrice || 0;
+                return {
+                    order_id: orderData.id,
+                    service_name: s,
+                    price: price
+                };
+            });
 
             const { error: servicesError } = await supabase.from('order_services').insert(services);
             if (servicesError) throw servicesError;

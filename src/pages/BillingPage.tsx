@@ -21,10 +21,16 @@ export const BillingPage: React.FC = () => {
     const [search, setSearch] = useState('');
 
     useEffect(() => {
-        api.getOrders().then(data => {
-            // Filter delivered orders which usually have invoices
-            setOrders(data.filter(o => o.status === 'Delivered'));
-        });
+        const fetchOrders = async () => {
+            try {
+                const data = await api.getOrders();
+                setOrders(data);
+                // In a real app, we'd also fetch stats dynamically based on these orders
+            } catch (error) {
+                console.error("Failed to fetch billing data", error);
+            }
+        };
+        fetchOrders();
     }, []);
 
     const filteredOrders = orders.filter(o =>
@@ -120,11 +126,18 @@ export const BillingPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <p className="font-black text-gray-900">$450.00</p>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">via Visa •••• 4242</p>
+                                                <p className="font-black text-gray-900">${order.totalAmount?.toLocaleString() || '0.00'}</p>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">via Cardending in 4242</p>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase">Paid</span>
+                                                <span className={cn(
+                                                    "px-3 py-1 rounded-full text-[10px] font-black uppercase",
+                                                    order.paymentStatus === 'paid' ? "bg-emerald-100 text-emerald-700" :
+                                                        order.paymentStatus === 'pending' ? "bg-orange-100 text-orange-700" :
+                                                            "bg-gray-100 text-gray-700"
+                                                )}>
+                                                    {order.paymentStatus || 'Pendng'}
+                                                </span>
                                             </td>
                                             <td className="px-8 py-6 text-right">
                                                 <button className="p-3 bg-gray-50 text-gray-400 rounded-xl hover:bg-upca-blue hover:text-white transition-all">
