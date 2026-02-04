@@ -329,7 +329,7 @@ export const api = {
     // Payments (Mock)
     // =========================
     getPaymentMethods: async () => {
-        const user = await requireUser();
+        await requireUser();
         const { data, error } = await supabase
             .from('payment_methods')
             .select('*')
