@@ -11,7 +11,8 @@ import {
     LogOut,
     Search,
     Menu,
-    User
+    User,
+    HelpCircle
 } from 'lucide-react';
 import { cn } from '../services/utils';
 
@@ -22,7 +23,8 @@ const sidebarItems = [
     { name: 'Bookings', path: '/bookings', icon: Calendar },
     { name: 'Deliverables', path: '/deliverables', icon: ImageIcon },
     { name: 'Billing', path: '/billing', icon: CreditCard },
-    { name: 'Support', path: '/support', icon: MessageSquare },
+    { name: 'Messages', path: '/messages', icon: MessageSquare },
+    { name: 'Support', path: '/support', icon: HelpCircle },
 ];
 
 import { useUser } from '../contexts/UserContext';

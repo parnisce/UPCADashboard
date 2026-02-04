@@ -21,6 +21,7 @@ import { BillingPage } from "./pages/BillingPage";
 import { BookingsPage } from "./pages/BookingsPage";
 import { PaymentMethodsPage } from "./pages/PaymentMethodsPage";
 import { SupportPage } from "./pages/SupportPage";
+import { MessagesPage } from "./pages/MessagesPage";
 
 // Admin Pages
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
@@ -73,6 +74,7 @@ function App() {
             <Route path="/billing" element={<BillingPage />} />
             <Route path="/billing/payment-methods" element={<PaymentMethodsPage />} />
             <Route path="/support" element={<SupportPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
           </Route>
         </Routes>
       </NotificationProvider>
