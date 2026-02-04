@@ -329,15 +329,54 @@ export const api = {
     // Payments (Mock)
     // =========================
     getPaymentMethods: async () => {
-        // In a real app, this would fetch saved cards from Stripe via your backend
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return mockPaymentMethods;
+        const user = await requireUser();
+        const { data, error } = await supabase
+            .from('payment_methods')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.warn('Could not fetch real payment methods (table might be missing). Using mock backup.');
+            return mockPaymentMethods;
+        }
+
+        return data.map((pm: any) => ({
+            id: pm.id,
+            type: pm.brand || 'card',
+            last4: pm.last4,
+            expiry: pm.expiry,
+            isDefault: pm.is_default,
+            brandColor: pm.brand === 'visa' ? 'bg-[#0057b7]' : pm.brand === 'mastercard' ? 'bg-[#eb001b]' : 'bg-gray-500'
+        }));
     },
 
     addPaymentMethod: async (method: any) => {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        mockPaymentMethods.push(method);
-        return method;
+        const user = await requireUser();
+
+        // 1. Try to save to real database
+        const { data, error } = await supabase.from('payment_methods').insert({
+            user_id: user.id,
+            stripe_payment_method_id: method.id, // Using the mocked 'pm_' id as the stripe id for now
+            brand: method.type,
+            last4: method.last4,
+            expiry: method.expiry,
+            is_default: method.isDefault
+        }).select().single();
+
+        if (error) {
+            console.error('Database save failed, using local fallback:', error);
+            mockPaymentMethods.push(method);
+            return method;
+        }
+
+        return {
+            id: data.id,
+            type: data.brand,
+            last4: data.last4,
+            expiry: data.expiry,
+            isDefault: data.is_default,
+            brandColor: data.brand === 'visa' ? 'bg-[#0057b7]' : 'bg-[#eb001b]'
+        };
     },
 
     chargePaymentMethod: async (paymentMethodId: string, amount: number) => {
