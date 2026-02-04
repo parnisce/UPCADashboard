@@ -326,12 +326,9 @@ export const api = {
     // Payments (Mock)
     // =========================
     getPaymentMethods: async () => {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return [
-            { id: 'pm_1', type: 'visa', last4: '4242', expiry: '12/26', isDefault: true, brandColor: 'bg-[#0057b7]' },
-            { id: 'pm_2', type: 'mastercard', last4: '8888', expiry: '08/25', isDefault: false, brandColor: 'bg-[#eb001b]' }
-        ];
+        // In a real app, this would fetch saved cards from Stripe via your backend
+        // const { data } = await supabase.from('payment_methods').select('*');
+        return [];
     },
 
     chargePaymentMethod: async (paymentMethodId: string, amount: number) => {

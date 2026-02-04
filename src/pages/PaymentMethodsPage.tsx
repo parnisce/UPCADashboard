@@ -23,10 +23,7 @@ interface PaymentMethod {
 export const PaymentMethodsPage: React.FC = () => {
     const navigate = useNavigate();
     const [isAdding, setIsAdding] = useState(false);
-    const [methods, setMethods] = useState<PaymentMethod[]>([
-        { id: 'pm_1', type: 'visa', last4: '4242', expiry: '12/26', isDefault: true, brandColor: 'bg-[#0057b7]' },
-        { id: 'pm_2', type: 'mastercard', last4: '8888', expiry: '08/25', isDefault: false, brandColor: 'bg-[#eb001b]' }
-    ]);
+    const [methods, setMethods] = useState<PaymentMethod[]>([]);
 
     const setDefault = (id: string) => {
         setMethods(methods.map(m => ({ ...m, isDefault: m.id === id })));
@@ -42,16 +39,18 @@ export const PaymentMethodsPage: React.FC = () => {
 
     const handleAddMethod = async () => {
         setIsAdding(true);
-        // Simulate Stripe Checkout delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Simulate Stripe Connect Flow
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
+        // In a real app, this would redirect to Stripe or open Elements
+        // For now, we simulate a successful connection
         const newMethod: PaymentMethod = {
             id: `pm_${Date.now()}`,
-            type: 'amex',
-            last4: Math.floor(1000 + Math.random() * 9000).toString(),
-            expiry: '10/28',
-            isDefault: false,
-            brandColor: 'bg-[#2e77bb]'
+            type: 'visa',
+            last4: '4242',
+            expiry: '12/28',
+            isDefault: methods.length === 0,
+            brandColor: 'bg-[#0057b7]'
         };
 
         setMethods([...methods, newMethod]);
@@ -144,8 +143,8 @@ export const PaymentMethodsPage: React.FC = () => {
                         )}
                     </div>
                     <div className="text-center">
-                        <p className="font-bold text-gray-900">{isAdding ? 'Connecting to Stripe...' : 'Add New Payment Method'}</p>
-                        <p className="text-xs text-gray-400 mt-1">Stripe secure checkout</p>
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">{isAdding ? 'Connecting to Stripe...' : 'Link a Payment Method'}</h3>
+                        <p className="text-sm text-gray-400">Connect securely via Stripe to pay for orders.</p>
                     </div>
                 </button>
             </div>
