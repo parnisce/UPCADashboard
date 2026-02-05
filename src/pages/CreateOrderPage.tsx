@@ -22,23 +22,27 @@ export const CreateOrderPage: React.FC = () => {
     const dateParam = queryParams.get('date');
 
     const services = useServicesStore(state => state.services);
+    const isLoadingServices = useServicesStore(state => state.isLoading);
     const activeServices = React.useMemo(() => services.filter(s => s.isActive), [services]);
 
     const [properties, setProperties] = useState<Property[]>([]);
     const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
-    const [selectedServices, setSelectedServices] = useState<ServiceType[]>(
-        dateParam ? [
-            'Real Estate Photography',
-            'Property Video Tours',
-            '360 / Virtual Tours',
-            'Drone Photos & Films'
-        ] : []
-    );
-    const [shootDate, setShootDate] = useState(dateParam || '');
+    const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
+    const [shootDate, setShootDate] = useState('');
+    const hasInitializedFromUrl = React.useRef(false);
 
-    // Sync shootDate with dateParam if it changes
+    // Initialize from URL only once
     useEffect(() => {
-        if (dateParam) setShootDate(dateParam);
+        if (!hasInitializedFromUrl.current && dateParam) {
+            setShootDate(dateParam);
+            setSelectedServices([
+                'Real Estate Photography' as ServiceType,
+                'Property Video Tours' as ServiceType,
+                '360 / Virtual Tours' as ServiceType,
+                'Drone Photos & Films' as ServiceType
+            ]);
+            hasInitializedFromUrl.current = true;
+        }
     }, [dateParam]);
     const [notes, setNotes] = useState('');
     const [step, setStep] = useState(1);
@@ -59,23 +63,23 @@ export const CreateOrderPage: React.FC = () => {
         }
     }, [step]);
 
-    const { setServices, setLoading, isLoading } = useServicesStore();
+    const { setServices, setLoading } = useServicesStore();
 
     useEffect(() => {
         const fetchServices = async () => {
             setLoading(true);
             try {
                 const data = await api.getServices();
-                if (data.length > 0) setServices(data);
+                if (data && data.length > 0) setServices(data);
             } catch (error) {
-                console.error(error);
+                console.error('Fetch services error:', error);
             } finally {
                 setLoading(false);
             }
         };
         fetchServices();
         api.getProperties().then(setProperties);
-    }, []);
+    }, [setServices, setLoading]);
 
     const toggleService = (serviceId: ServiceType) => {
         setSelectedServices(prev =>
@@ -246,10 +250,15 @@ export const CreateOrderPage: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {isLoading && services.length === 0 ? (
+                            {isLoadingServices && services.length === 0 ? (
                                 <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-400">
                                     <Loader2 className="w-8 h-8 animate-spin mb-4" />
                                     <p>Loading available services...</p>
+                                </div>
+                            ) : activeServices.length === 0 ? (
+                                <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-400">
+                                    <Camera className="w-8 h-8 mb-4 opacity-20" />
+                                    <p>No active services found. Please contact support.</p>
                                 </div>
                             ) : activeServices.map((service) => {
                                 const Icon = iconMap[service.icon || 'Camera'] || Camera;
