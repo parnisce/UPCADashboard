@@ -21,7 +21,8 @@ export const CreateOrderPage: React.FC = () => {
     const queryParams = new URLSearchParams(location.search);
     const dateParam = queryParams.get('date');
 
-    const activeServices = useServicesStore(state => state.services.filter(s => s.isActive));
+    const services = useServicesStore(state => state.services);
+    const activeServices = React.useMemo(() => services.filter(s => s.isActive), [services]);
 
     const [properties, setProperties] = useState<Property[]>([]);
     const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
@@ -34,6 +35,11 @@ export const CreateOrderPage: React.FC = () => {
         ] : []
     );
     const [shootDate, setShootDate] = useState(dateParam || '');
+
+    // Sync shootDate with dateParam if it changes
+    useEffect(() => {
+        if (dateParam) setShootDate(dateParam);
+    }, [dateParam]);
     const [notes, setNotes] = useState('');
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +59,7 @@ export const CreateOrderPage: React.FC = () => {
         }
     }, [step]);
 
-    const { setServices, setLoading } = useServicesStore();
+    const { setServices, setLoading, isLoading } = useServicesStore();
 
     useEffect(() => {
         const fetchServices = async () => {
@@ -240,7 +246,12 @@ export const CreateOrderPage: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {activeServices.map((service) => {
+                            {isLoading && services.length === 0 ? (
+                                <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-400">
+                                    <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                                    <p>Loading available services...</p>
+                                </div>
+                            ) : activeServices.map((service) => {
                                 const Icon = iconMap[service.icon || 'Camera'] || Camera;
                                 const isSelected = selectedServices.includes(service.id);
                                 return (
