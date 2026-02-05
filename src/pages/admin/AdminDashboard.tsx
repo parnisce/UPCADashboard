@@ -108,34 +108,31 @@ export const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button
                     onClick={() => navigate('/admin/services')}
-                    className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group"
+                    className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col items-center text-center"
                 >
                     <DollarSign className="w-8 h-8 mb-3 group-hover:scale-110 transition-transform" />
                     <h3 className="font-bold text-lg">Services & Pricing</h3>
                     <p className="text-sm text-blue-100 mt-1">Manage offerings</p>
                 </button>
-
                 <button
                     onClick={() => navigate('/admin/bookings')}
-                    className="p-6 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group"
+                    className="p-6 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col items-center text-center"
                 >
                     <Calendar className="w-8 h-8 mb-3 group-hover:scale-110 transition-transform" />
                     <h3 className="font-bold text-lg">Scheduled Bookings</h3>
                     <p className="text-sm text-teal-100 mt-1">View calendar</p>
                 </button>
-
                 <button
                     onClick={() => navigate('/admin/orders')}
-                    className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group"
+                    className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col items-center text-center"
                 >
                     <ShoppingBag className="w-8 h-8 mb-3 group-hover:scale-110 transition-transform" />
                     <h3 className="font-bold text-lg">Order Management</h3>
                     <p className="text-sm text-purple-100 mt-1">Update statuses</p>
                 </button>
-
                 <button
                     onClick={() => navigate('/admin/messages')}
-                    className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group"
+                    className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col items-center text-center"
                 >
                     <MessageSquare className="w-8 h-8 mb-3 group-hover:scale-110 transition-transform" />
                     <h3 className="font-bold text-lg">Messages</h3>

@@ -105,7 +105,7 @@ export const CustomerRegisterPage: React.FC = () => {
                                         name="fullName"
                                         value={formData.fullName}
                                         onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-4 bg-gray-50/50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
                                         placeholder="John Doe"
                                         required
                                     />
@@ -121,7 +121,7 @@ export const CustomerRegisterPage: React.FC = () => {
                                         name="company"
                                         value={formData.company}
                                         onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-4 bg-gray-50/50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
                                         placeholder="Exp Realty"
                                     />
                                 </div>
@@ -137,7 +137,7 @@ export const CustomerRegisterPage: React.FC = () => {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="w-full pl-12 pr-4 py-4 bg-gray-50/50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
+                                    className="w-full pl-12 pr-4 py-4 bg-white border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
                                     placeholder="name@brokerage.com"
                                     required
                                 />
@@ -153,7 +153,7 @@ export const CustomerRegisterPage: React.FC = () => {
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    className="w-full pl-12 pr-4 py-4 bg-gray-50/50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
+                                    className="w-full pl-12 pr-4 py-4 bg-white border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
                                     placeholder="(555) 555-5555"
                                 />
                             </div>
@@ -169,7 +169,7 @@ export const CustomerRegisterPage: React.FC = () => {
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-4 bg-gray-50/50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
                                         placeholder="••••••••"
                                         required
                                         minLength={6}
@@ -186,7 +186,7 @@ export const CustomerRegisterPage: React.FC = () => {
                                         name="confirmPassword"
                                         value={formData.confirmPassword}
                                         onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-4 bg-gray-50/50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 focus:bg-white transition-all outline-none border text-gray-900"
                                         placeholder="••••••••"
                                         required
                                     />

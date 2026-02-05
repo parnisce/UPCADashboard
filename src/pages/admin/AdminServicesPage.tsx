@@ -161,7 +161,7 @@ export const AdminServicesPage: React.FC = () => {
                                     placeholder="e.g., Virtual Staging"
                                     value={newServiceForm.name}
                                     onChange={(e) => setNewServiceForm({ ...newServiceForm, name: e.target.value as ServiceType })}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
                                 />
                             </div>
                             <div>
@@ -170,7 +170,7 @@ export const AdminServicesPage: React.FC = () => {
                                     type="number"
                                     value={newServiceForm.basePrice}
                                     onChange={(e) => setNewServiceForm({ ...newServiceForm, basePrice: Number(e.target.value) })}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
                                 />
                             </div>
                             <div>
@@ -180,7 +180,7 @@ export const AdminServicesPage: React.FC = () => {
                                     onChange={(e) => setNewServiceForm({ ...newServiceForm, description: e.target.value })}
                                     placeholder="Describe the service..."
                                     rows={2}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none resize-none"
+                                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none resize-none"
                                 />
                             </div>
                             <div className="flex gap-2 pt-2">
@@ -218,7 +218,7 @@ export const AdminServicesPage: React.FC = () => {
                                         type="text"
                                         value={editForm?.name || ''}
                                         onChange={(e) => setEditForm(editForm ? { ...editForm, name: e.target.value as ServiceType } : null)}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                                        className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
                                     />
                                 </div>
                                 <div>
@@ -227,7 +227,7 @@ export const AdminServicesPage: React.FC = () => {
                                         type="number"
                                         value={editForm?.basePrice || 0}
                                         onChange={(e) => setEditForm(editForm ? { ...editForm, basePrice: Number(e.target.value) } : null)}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                                        className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
                                     />
                                 </div>
                                 <div>
@@ -236,7 +236,7 @@ export const AdminServicesPage: React.FC = () => {
                                         value={editForm?.description || ''}
                                         onChange={(e) => setEditForm(editForm ? { ...editForm, description: e.target.value } : null)}
                                         rows={2}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none resize-none"
+                                        className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none resize-none"
                                     />
                                 </div>
                                 <div className="flex gap-2">

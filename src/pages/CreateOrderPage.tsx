@@ -331,7 +331,7 @@ export const CreateOrderPage: React.FC = () => {
                                 <input
                                     type="date"
                                     required
-                                    className="w-full p-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
+                                    className="w-full p-4 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
                                     value={shootDate}
                                     onChange={(e) => setShootDate(e.target.value)}
                                 />
@@ -339,7 +339,7 @@ export const CreateOrderPage: React.FC = () => {
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Additional Instructions</label>
                                 <textarea
-                                    className="w-full p-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all min-h-[120px]"
+                                    className="w-full p-4 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all min-h-[120px]"
                                     placeholder="Access codes, specific shots you want, etc..."
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}

@@ -54,7 +54,7 @@ export const AdminBookingsPage: React.FC = () => {
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value as any)}
-                        className="px-4 py-2 border border-gray-200 rounded-xl font-medium text-sm focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                        className="px-4 py-2 bg-white border border-gray-200 rounded-xl font-medium text-sm focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
                     >
                         <option value="all">All Bookings</option>
                         <option value="scheduled">Scheduled Only</option>

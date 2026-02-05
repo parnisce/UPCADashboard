@@ -100,7 +100,7 @@ export const CustomerLoginPage: React.FC = () => {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 transition-all outline-none border text-gray-900 font-medium"
+                                    className="w-full pl-12 pr-4 py-4 bg-white border-gray-100 rounded-2xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 transition-all outline-none border text-gray-900 font-medium"
                                     placeholder="name@brokerage.com"
                                     required
                                 />
@@ -118,7 +118,7 @@ export const CustomerLoginPage: React.FC = () => {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 transition-all outline-none border text-gray-900 font-medium"
+                                    className="w-full pl-12 pr-4 py-4 bg-white border-gray-100 rounded-2xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 transition-all outline-none border text-gray-900 font-medium"
                                     placeholder="••••••••"
                                     required
                                 />

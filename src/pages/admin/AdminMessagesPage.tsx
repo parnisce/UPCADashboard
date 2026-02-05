@@ -117,7 +117,7 @@ export const AdminMessagesPage: React.FC = () => {
                                 placeholder="Search conversations..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
                             />
                         </div>
                     </div>
@@ -216,7 +216,7 @@ export const AdminMessagesPage: React.FC = () => {
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 outline-none transition-all"
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-100 rounded-xl focus:ring-4 focus:ring-upca-blue/5 focus:bg-white focus:border-upca-blue/30 outline-none transition-all"
                                 />
                                 <button
                                     onClick={handleSendMessage}

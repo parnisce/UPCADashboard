@@ -151,7 +151,7 @@ export const AddPropertyPage: React.FC = () => {
                                         name="address"
                                         required
                                         placeholder="Enter full property address"
-                                        className="w-full p-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
+                                        className="w-full p-4 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
                                         value={formData.address}
                                         onChange={handleChange}
                                     />
@@ -166,7 +166,7 @@ export const AddPropertyPage: React.FC = () => {
                                             type="text"
                                             name="mls"
                                             placeholder="e.g. C1234567"
-                                            className="w-full p-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
+                                            className="w-full p-4 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
                                             value={formData.mls}
                                             onChange={handleChange}
                                         />
@@ -179,7 +179,7 @@ export const AddPropertyPage: React.FC = () => {
                                         <div className="relative">
                                             <select
                                                 name="status"
-                                                className="w-full p-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all appearance-none cursor-pointer"
+                                                className="w-full p-4 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all appearance-none cursor-pointer"
                                                 value={formData.status}
                                                 onChange={handleChange}
                                             >
@@ -214,7 +214,7 @@ export const AddPropertyPage: React.FC = () => {
                                         <input
                                             type="number"
                                             name="beds"
-                                            className="w-full p-4 pl-10 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
+                                            className="w-full p-4 pl-10 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
                                             value={formData.beds}
                                             onChange={handleChange}
                                         />
@@ -228,7 +228,7 @@ export const AddPropertyPage: React.FC = () => {
                                         <input
                                             type="number"
                                             name="baths"
-                                            className="w-full p-4 pl-10 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
+                                            className="w-full p-4 pl-10 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
                                             value={formData.baths}
                                             onChange={handleChange}
                                         />
@@ -242,7 +242,7 @@ export const AddPropertyPage: React.FC = () => {
                                         <input
                                             type="number"
                                             name="sqft"
-                                            className="w-full p-4 pl-10 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
+                                            className="w-full p-4 pl-10 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
                                             value={formData.sqft}
                                             onChange={handleChange}
                                         />
@@ -256,7 +256,7 @@ export const AddPropertyPage: React.FC = () => {
                                         <input
                                             type="number"
                                             name="price"
-                                            className="w-full p-4 pl-10 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
+                                            className="w-full p-4 pl-10 bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-upca-blue/20 outline-none transition-all"
                                             value={formData.price}
                                             onChange={handleChange}
                                         />
