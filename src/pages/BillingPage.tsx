@@ -40,7 +40,8 @@ export const BillingPage: React.FC = () => {
 
     const totalSpent = orders.reduce((sum, order) => {
         if (order.paymentStatus === 'paid') {
-            return sum + (order.totalAmount || 0);
+            const subtotal = order.totalAmount || 0;
+            return sum + (subtotal * 1.13);
         }
         return sum;
     }, 0);
@@ -136,7 +137,7 @@ export const BillingPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <p className="font-black text-gray-900">${order.totalAmount?.toLocaleString() || '0.00'}</p>
+                                                <p className="font-black text-gray-900">${((order.totalAmount || 0) * 1.13).toFixed(2)}</p>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">via Cardending in 4242</p>
                                             </td>
                                             <td className="px-8 py-6">

@@ -15,7 +15,7 @@ const transformOrder = (row: any): Order => ({
     shootDate: row.shoot_date,
     agentName: row.profiles?.full_name || 'Unknown Agent',
     createdAt: row.created_at,
-    totalAmount: row.order_services?.reduce((sum: number, s: any) => sum + (s.price || 0), 0) || 0,
+    totalAmount: row.order_services?.reduce((sum: number, s: any) => sum + (Number(s.price) || 0), 0) || 0,
     deliverables:
         row.assets?.map((a: any) => ({
             id: a.id,
@@ -37,8 +37,57 @@ async function requireUser() {
 
 export const api = {
     // =========================
-    // User Management
+    // Services (Database Connected)
     // =========================
+    getServices: async () => {
+        const { data, error } = await supabase
+            .from('services')
+            .select('*')
+            .order('name', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching services:', error);
+            return [];
+        }
+
+        return data.map(s => ({
+            id: s.id,
+            name: s.name,
+            basePrice: Number(s.base_price),
+            description: s.description,
+            features: s.features || [],
+            isActive: s.is_active,
+            icon: s.icon
+        }));
+    },
+
+    saveService: async (service: any) => {
+        const { error } = await supabase
+            .from('services')
+            .upsert({
+                id: service.id,
+                name: service.name,
+                base_price: service.basePrice,
+                description: service.description,
+                features: service.features,
+                is_active: service.isActive,
+                icon: service.icon,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) throw error;
+        return true;
+    },
+
+    deleteService: async (id: string) => {
+        const { error } = await supabase
+            .from('services')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        return true;
+    },
     getCurrentUser: async (): Promise<User | null> => {
         const { data } = await supabase.auth.getUser();
         const user = data.user;
@@ -272,18 +321,21 @@ export const api = {
     },
 
     // ✅ SUPER IMPORTANT: agent_id MUST be current logged-in user
-    createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName' | 'paymentStatus'> & { paymentStatus?: 'pending' | 'paid' }) => {
+    createOrder: async (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'agentName' | 'paymentStatus'> & {
+        paymentStatus?: 'pending' | 'paid',
+        servicePrices?: Record<string, number>
+    }) => {
         const user = await requireUser();
         const userId = user.id;
 
-        // 1) Create Order (RLS usually checks agent_id = auth.uid())
+        // 1) Create Order
         const { data: orderData, error: orderError } = await supabase
             .from('orders')
             .insert({
                 property_id: order.propertyId,
                 status: 'Scheduled',
                 shoot_date: order.shootDate,
-                agent_id: userId, // ✅ MUST BE current user
+                agent_id: userId,
                 payment_status: order.paymentStatus || 'pending',
             })
             .select()
@@ -294,7 +346,7 @@ export const api = {
         // 2) Add Services
         if (order.services && order.services.length > 0) {
             const services = order.services.map((s) => {
-                const price = defaultServices.find(ds => ds.id === s)?.basePrice || 0;
+                const price = order.servicePrices?.[s] ?? defaultServices.find(ds => ds.id === s)?.basePrice ?? 0;
                 return {
                     order_id: orderData.id,
                     service_name: s,

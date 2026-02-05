@@ -1,51 +1,209 @@
-import { useState } from 'react';
-import { Plus, Edit2, Trash2, DollarSign, Save, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, DollarSign, Save, X, Loader2, CheckCircle } from 'lucide-react';
+import { api } from '../../services/api';
+import { cn } from '../../services/utils';
 import type { ServiceType } from '../../types';
 import { useServicesStore, type ServicePricing } from '../../stores/servicesStore';
 
 export const AdminServicesPage: React.FC = () => {
-    const { services, updateService } = useServicesStore();
+    const { services, updateService, addService, setServices, removeService, isLoading, setLoading } = useServicesStore();
 
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<ServicePricing | null>(null);
+    const [isAdding, setIsAdding] = useState(false);
+    const [newServiceForm, setNewServiceForm] = useState<Partial<ServicePricing>>({
+        name: '' as ServiceType,
+        basePrice: 0,
+        description: '',
+        features: [],
+        isActive: true,
+        icon: 'Camera'
+    });
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            setLoading(true);
+            try {
+                const data = await api.getServices();
+                if (data.length > 0) {
+                    setServices(data);
+                }
+            } catch (error) {
+                console.error('Failed to load services:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchServices();
+    }, []);
 
     const handleEdit = (index: number) => {
         setEditingIndex(index);
         setEditForm({ ...services[index] });
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (editingIndex !== null && editForm) {
-            updateService(editForm.id, editForm);
-            setEditingIndex(null);
-            setEditForm(null);
+            try {
+                await api.saveService(editForm);
+                updateService(editForm.id, editForm);
+                setEditingIndex(null);
+                setEditForm(null);
+            } catch (error) {
+                alert('Failed to save service');
+                console.error(error);
+            }
+        }
+    };
+
+    const handleAdd = async () => {
+        if (newServiceForm.name && newServiceForm.basePrice !== undefined) {
+            const newService: ServicePricing = {
+                id: newServiceForm.name as ServiceType,
+                name: newServiceForm.name as ServiceType,
+                basePrice: newServiceForm.basePrice,
+                description: newServiceForm.description || '',
+                features: newServiceForm.features || [],
+                isActive: true,
+                icon: newServiceForm.icon || 'Camera'
+            };
+
+            try {
+                await api.saveService(newService);
+                addService(newService);
+                setIsAdding(false);
+                setNewServiceForm({
+                    name: '' as ServiceType,
+                    basePrice: 0,
+                    description: '',
+                    features: [],
+                    isActive: true,
+                    icon: 'Camera'
+                });
+            } catch (error) {
+                alert('Failed to create service');
+                console.error(error);
+            }
         }
     };
 
     const handleCancel = () => {
         setEditingIndex(null);
         setEditForm(null);
+        setIsAdding(false);
     };
 
-    const toggleActive = (index: number) => {
+    const toggleActive = async (index: number) => {
         const service = services[index];
-        updateService(service.id, { isActive: !service.isActive });
+        const updated = { ...service, isActive: !service.isActive };
+        try {
+            await api.saveService(updated);
+            updateService(service.id, { isActive: !service.isActive });
+        } catch (error) {
+            console.error(error);
+        }
     };
+
+    const handleDelete = async (id: string) => {
+        if (window.confirm('Are you sure you want to delete this service?')) {
+            try {
+                await api.deleteService(id);
+                removeService(id);
+            } catch (error) {
+                alert('Failed to delete service');
+                console.error(error);
+            }
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-10 h-10 animate-spin text-upca-blue" />
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Services & Pricing</h1>
                     <p className="text-gray-500 mt-1">Manage your service offerings and pricing structure</p>
                 </div>
-                <button className="inline-flex items-center justify-center gap-2 bg-upca-blue text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 hover:-translate-y-0.5 transition-all">
-                    <Plus className="w-5 h-5" />
-                    Add New Service
-                </button>
+                {!isAdding && (
+                    <button
+                        onClick={() => setIsAdding(true)}
+                        className="inline-flex items-center justify-center gap-2 bg-upca-blue text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-upca-blue/20 hover:bg-upca-blue/90 hover:-translate-y-0.5 transition-all"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Add New Service
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Add New Service Card */}
+                {isAdding && (
+                    <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-upca-blue shadow-sm animate-in zoom-in-95 duration-300">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-upca-blue">
+                                <Plus className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900">Add New Service</h2>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Service Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g., Virtual Staging"
+                                    value={newServiceForm.name}
+                                    onChange={(e) => setNewServiceForm({ ...newServiceForm, name: e.target.value as ServiceType })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Base Price ($)</label>
+                                <input
+                                    type="number"
+                                    value={newServiceForm.basePrice}
+                                    onChange={(e) => setNewServiceForm({ ...newServiceForm, basePrice: Number(e.target.value) })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    value={newServiceForm.description}
+                                    onChange={(e) => setNewServiceForm({ ...newServiceForm, description: e.target.value })}
+                                    placeholder="Describe the service..."
+                                    rows={2}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-upca-blue/20 focus:border-upca-blue outline-none resize-none"
+                                />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <button
+                                    onClick={handleAdd}
+                                    disabled={!newServiceForm.name}
+                                    className="flex-1 flex items-center justify-center gap-2 bg-upca-blue text-white px-4 py-3 rounded-xl font-semibold hover:bg-upca-blue/90 transition-colors disabled:opacity-50"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    Create Service
+                                </button>
+                                <button
+                                    onClick={handleCancel}
+                                    className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-600 px-4 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {services.map((service, index) => (
                     <div
                         key={index}
@@ -123,7 +281,20 @@ export const AdminServicesPage: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => toggleActive(index)}
+                                            className={cn(
+                                                "p-2 rounded-lg transition-all",
+                                                service.isActive
+                                                    ? "text-emerald-500 hover:bg-emerald-50"
+                                                    : "text-gray-400 hover:bg-gray-50"
+                                            )}
+                                            title={service.isActive ? "Deactivate" : "Activate"}
+                                        >
+                                            <CheckCircle className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(service.id)}
                                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                            title="Delete"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>

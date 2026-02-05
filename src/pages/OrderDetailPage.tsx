@@ -223,8 +223,8 @@ export const OrderDetailPage: React.FC = () => {
                                 <p className="font-bold text-gray-900 mt-1">{order.deliverables?.length || 0} files</p>
                             </div>
                             <div className="p-4 bg-gray-50 rounded-2xl">
-                                <p className="text-[10px] font-black uppercase text-gray-400">Price Estimate</p>
-                                <p className="font-bold text-gray-900 mt-1">$450.00</p>
+                                <p className="text-[10px] font-black uppercase text-gray-400">Total (Inc. Tax)</p>
+                                <p className="font-bold text-gray-900 mt-1">${((order.totalAmount || 0) * 1.13).toFixed(2)}</p>
                             </div>
                             <div className="p-4 bg-gray-50 rounded-2xl">
                                 <p className="text-[10px] font-black uppercase text-gray-400">Agent</p>

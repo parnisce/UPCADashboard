@@ -149,7 +149,9 @@ export const AdminOrderDetailPage: React.FC = () => {
         'Archived': 'Archived'
     };
 
-    const totalPrice = order.services.length * 350;
+    const subtotal = order.totalAmount || 0;
+    const tax = subtotal * 0.13;
+    const totalPrice = subtotal + tax;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -224,7 +226,6 @@ export const AdminOrderDetailPage: React.FC = () => {
                                                 </div>
                                                 <span className="font-medium text-gray-900">{service}</span>
                                             </div>
-                                            <span className="font-bold text-gray-900">$350</span>
                                         </div>
 
                                         {/* Asset List */}
@@ -302,9 +303,19 @@ export const AdminOrderDetailPage: React.FC = () => {
                                 );
                             })}
                         </div>
-                        <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
-                            <span className="font-bold text-gray-900">Total</span>
-                            <span className="text-2xl font-black text-upca-blue">${totalPrice}</span>
+                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                            <div className="flex items-center justify-between text-sm text-gray-500">
+                                <span>Subtotal</span>
+                                <span>${subtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm text-gray-500">
+                                <span>Tax (13%)</span>
+                                <span>${tax.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                <span className="font-bold text-gray-900">Total</span>
+                                <span className="text-2xl font-black text-upca-blue">${totalPrice.toFixed(2)}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -389,8 +400,8 @@ export const AdminOrderDetailPage: React.FC = () => {
                         <h3 className="font-bold text-gray-900 mb-4">Payment Status</h3>
                         <div className="space-y-3">
                             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                <span className="text-sm text-gray-600">Amount Due</span>
-                                <span className="font-bold text-gray-900">${totalPrice}</span>
+                                <span className="text-sm text-gray-600">Total Price</span>
+                                <span className="font-bold text-gray-900">${totalPrice.toFixed(2)}</span>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                 <span className="text-sm text-gray-600">Status</span>

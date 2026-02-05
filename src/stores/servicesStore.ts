@@ -14,8 +14,12 @@ export interface ServicePricing {
 
 interface ServicesStore {
     services: ServicePricing[];
+    isLoading: boolean;
     setServices: (services: ServicePricing[]) => void;
-    updateService: (id: ServiceType, updates: Partial<ServicePricing>) => void;
+    setLoading: (loading: boolean) => void;
+    addService: (service: ServicePricing) => void;
+    updateService: (id: string, updates: Partial<ServicePricing>) => void;
+    removeService: (id: string) => void;
     getActiveServices: () => ServicePricing[];
 }
 
@@ -24,7 +28,7 @@ export const defaultServices: ServicePricing[] = [
     {
         id: 'Real Estate Photography',
         name: 'Real Estate Photography',
-        basePrice: 250,
+        basePrice: 300,
         description: 'Professional property photography with HDR processing',
         features: ['25-35 HDR Photos', 'Same-day turnaround', 'Web & print optimized'],
         isActive: true,
@@ -60,7 +64,7 @@ export const defaultServices: ServicePricing[] = [
     {
         id: 'Property Microsites & Agent Websites',
         name: 'Property Microsites & Agent Websites',
-        basePrice: 500,
+        basePrice: 1000,
         description: 'Custom property website with all media',
         features: ['Custom domain', 'All media integrated', 'Lead capture forms'],
         isActive: true,
@@ -81,16 +85,24 @@ export const useServicesStore = create<ServicesStore>()(
     persist(
         (set, get) => ({
             services: defaultServices,
+            isLoading: false,
             setServices: (services) => set({ services }),
+            setLoading: (isLoading) => set({ isLoading }),
+            addService: (service) => set((state) => ({
+                services: [...state.services, service]
+            })),
             updateService: (id, updates) => set((state) => ({
                 services: state.services.map(service =>
                     service.id === id ? { ...service, ...updates } : service
                 )
             })),
+            removeService: (id) => set((state) => ({
+                services: state.services.filter(s => s.id !== id)
+            })),
             getActiveServices: () => get().services.filter(s => s.isActive)
         }),
         {
-            name: 'upca-services-storage'
+            name: 'upca-services-storage-v3'
         }
     )
 );

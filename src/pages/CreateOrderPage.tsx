@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Check, Calendar, MapPin, Camera, Video, Box, Plane, Globe, ShoppingCart, Plus, CreditCard, Lock, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
@@ -21,8 +21,7 @@ export const CreateOrderPage: React.FC = () => {
     const queryParams = new URLSearchParams(location.search);
     const dateParam = queryParams.get('date');
 
-    const { getActiveServices } = useServicesStore();
-    const activeServices = useMemo(() => getActiveServices(), [getActiveServices]);
+    const activeServices = useServicesStore(state => state.services.filter(s => s.isActive));
 
     const [properties, setProperties] = useState<Property[]>([]);
     const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
@@ -54,7 +53,21 @@ export const CreateOrderPage: React.FC = () => {
         }
     }, [step]);
 
+    const { setServices, setLoading } = useServicesStore();
+
     useEffect(() => {
+        const fetchServices = async () => {
+            setLoading(true);
+            try {
+                const data = await api.getServices();
+                if (data.length > 0) setServices(data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchServices();
         api.getProperties().then(setProperties);
     }, []);
 
@@ -85,18 +98,26 @@ export const CreateOrderPage: React.FC = () => {
         setIsSubmitting(true);
         try {
             // 1. Charge Payment
-            const total = calculateTotal();
-            const paymentResult = await api.chargePaymentMethod(selectedPaymentMethod, total);
+            const subtotal = calculateTotal();
+            const totalWithTax = subtotal * 1.13;
+            const paymentResult = await api.chargePaymentMethod(selectedPaymentMethod, totalWithTax);
 
             if (!paymentResult.success) throw new Error('Payment failed');
 
             // 2. Create Order
+            const servicePrices: Record<string, number> = {};
+            selectedServices.forEach(serviceId => {
+                const service = activeServices.find(s => s.id === serviceId);
+                if (service) servicePrices[serviceId] = service.basePrice;
+            });
+
             await api.createOrder({
                 propertyId: selectedPropertyId,
                 propertyAddress: selectedProperty.address,
                 services: selectedServices,
                 shootDate,
-                paymentStatus: 'paid'
+                paymentStatus: 'paid',
+                servicePrices
             });
 
             // Success
